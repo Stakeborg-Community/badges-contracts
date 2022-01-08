@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.4.1",
+    "chai": "^4.3.4",
     "hardhat-ethernal": "^0.3.12"
   }
 }

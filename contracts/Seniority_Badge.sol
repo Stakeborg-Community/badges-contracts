@@ -12,7 +12,9 @@ contract SeniorityBadge is ERC721, ERC721Enumerable, Pausable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
 
-    constructor() ERC721("Seniority Badge", "SEN") {}
+    constructor() ERC721("Seniority Badge", "SEN") {
+        pause();
+    }
 
     function pause() public onlyOwner {
         _pause();

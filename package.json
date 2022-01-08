@@ -1,0 +1,27 @@
+{
+  "name": "badges-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Stakeborg-Community/badges-contracts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Stakeborg-Community/badges-contracts/issues"
+  },
+  "homepage": "https://github.com/Stakeborg-Community/badges-contracts#readme",
+  "devDependencies": {
+    "hardhat": "^2.8.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.4.1",
+    "hardhat-ethernal": "^0.3.12"
+  }
+}

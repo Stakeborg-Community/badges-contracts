@@ -2,6 +2,9 @@
  * @type import('hardhat/config').HardhatUserConfig
  */
 require("hardhat-ethernal");
+require("hardhat-deploy");
+require("@nomiclabs/hardhat-ethers");
+
 const { NODE_API_KEY } = require("./secrets.json");
 
 module.exports = {

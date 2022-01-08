@@ -21,4 +21,12 @@ Development stack:
 
 - > npm install
 
+will install all dependencies
+
 - > npx hardhat node
+
+will start a local fork of the network
+
+- > npx hardhat run --network localhost scripts/deploy.js
+
+will deploy the contract on local fork

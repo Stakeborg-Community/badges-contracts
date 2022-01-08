@@ -7,7 +7,8 @@ Development stack:
 - [VSCode Solidity Extension](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
 - [Ethernal](https://app.tryethernal.com/)
 - [OpenZeppelin](https://openzeppelin.com/)
-- [Alchemy](alchemy.com)
+- [Alchemy](alchemy.com) - **optional**
+- [Remix](https://remix.ethereum.org/) - **optional**
 
 # How to set up development environment
 
@@ -17,7 +18,8 @@ Development stack:
 
 > { "NODE_API_KEY": "here is your key" }
 
-- Create an account on https://app.tryethernal.com/
+- Create an account on https://app.tryethernal.com/ - **optional**
+- Install the hardhat plugin on Remix - **optional**
 
 - > npm install
 
@@ -30,3 +32,5 @@ will start a local fork of the network
 - > npx hardhat run --network localhost scripts/deploy.js
 
 will deploy the contract on local fork
+
+You can use either ethernal or remix for easily, UI friendly, interactions with the smart contract

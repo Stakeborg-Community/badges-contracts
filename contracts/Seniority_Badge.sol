@@ -47,11 +47,19 @@ contract SeniorityBadge is
         _unpause();
     }
 
+    function setMaxSupply(uint256 new_supply)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        MAX_SUPPLY = new_supply;
+    }
+
     /* admin stuff */
 
     function safeMint(address to) public onlyRole(MINTER_ROLE) whenNotPaused {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
+        require(_tokenIdCounter.current() <= MAX_SUPPLY, "Exceeded max supply");
         _safeMint(to, tokenId);
         _revokeRole(MINTER_ROLE, to);
         _grantRole(MINTED_ROLE, to);

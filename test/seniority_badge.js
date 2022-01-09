@@ -14,12 +14,14 @@ describe("Seniority Badge Contract", function () {
   let owner;
   let userAddr1;
   let userAddr2;
+  let userAddr3;
   let userAddrs;
 
   beforeEach(async function () {
     contract = await ethers.getContractFactory("SeniorityBadge");
     deployment = await contract.deploy();
-    [owner, userAddr1, userAddr2, ...userAddrs] = await ethers.getSigners();
+    [owner, userAddr1, userAddr2, userAddr3, ...userAddrs] =
+      await ethers.getSigners();
   });
 
   describe("Deployment", function () {
@@ -248,6 +250,102 @@ describe("Seniority Badge Contract", function () {
 
       expect(await deployment.balanceOf(userAddr1.address)).to.eql(
         BigNumber.from(0)
+      );
+    });
+
+    it("Should not mint over MAX_SUPPLY on same user", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setMaxSupply(1);
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).safeMint(userAddr1.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+
+    it("Should not mint over MAX_SUPPLY on two users", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setMaxSupply(1);
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr2.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr2).safeMint(userAddr2.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(0)
+      );
+    });
+
+    it("Should not mint over MAX_SUPPLY on three users", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setMaxSupply(2);
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+      await deployment.connect(owner).grantRole(minter_role, userAddr2.address);
+      await deployment.connect(owner).grantRole(minter_role, userAddr3.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+      await deployment.connect(userAddr2).safeMint(userAddr2.address);
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr3).safeMint(userAddr3.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(1)
+      );
+      expect(await deployment.balanceOf(userAddr3.address)).to.eql(
+        BigNumber.from(0)
+      );
+    });
+
+    it("Should not mint twice for same user", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setMaxSupply(1);
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).safeMint(userAddr1.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
       );
     });
   });

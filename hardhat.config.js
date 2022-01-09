@@ -1,9 +1,8 @@
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-require("hardhat-ethernal");
-require("hardhat-deploy");
 require("@nomiclabs/hardhat-ethers");
+require("@nomiclabs/hardhat-waffle");
 
 const { NODE_API_KEY } = require("./secrets.json");
 

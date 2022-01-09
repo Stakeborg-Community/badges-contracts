@@ -74,6 +74,13 @@ describe("Seniority Badge Contract", function () {
       ).to.equal(true);
     });
 
+    it("Should have owner as MINTER", async function () {
+      let minter_role = await deployment.MINTER_ROLE();
+      expect(await deployment.hasRole(minter_role, owner.address)).to.equal(
+        true
+      );
+    });
+
     it("Others should not have DEFAULT ADMIN", async function () {
       let admin_role = await deployment.DEFAULT_ADMIN_ROLE();
       expect(await deployment.hasRole(admin_role, userAddr1.address)).to.equal(
@@ -96,6 +103,20 @@ describe("Seniority Badge Contract", function () {
       expect(
         await deployment.hasRole(minter_admin_role, userAddr1.address)
       ).to.equal(true);
+    });
+
+    it("MINTER ADMIN should not have DEFAULT ADMIN", async function () {
+      let minter_admin_role = await deployment.MINTER_ADMIN_ROLE();
+      let admin_role = await deployment.DEFAULT_ADMIN_ROLE();
+      await deployment
+        .connect(owner)
+        .grantRole(minter_admin_role, userAddr1.address);
+      expect(
+        await deployment.hasRole(minter_admin_role, userAddr1.address)
+      ).to.equal(true);
+      expect(await deployment.hasRole(admin_role, userAddr1.address)).to.equal(
+        false
+      );
     });
 
     it("MINTER ADMIN should not be able to set MINTER ADMIN", async function () {

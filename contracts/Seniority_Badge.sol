@@ -18,30 +18,43 @@ contract SeniorityBadge is
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
+    uint256 public MAX_SUPPLY = 100;
 
     bytes32 public constant MINTER_ADMIN_ROLE = keccak256("MINTER_ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant MINTED_ROLE = keccak256("MINTED_ROLE");
 
     constructor() ERC721("Seniority Badge", "SEN") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MINTER_ADMIN_ROLE, msg.sender);
+        _setupRole(MINTER_ROLE, msg.sender);
+        _setupRole(MINTED_ROLE, msg.sender);
+
         _setRoleAdmin(MINTER_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(MINTER_ROLE, MINTER_ADMIN_ROLE);
+        _setRoleAdmin(MINTED_ROLE, DEFAULT_ADMIN_ROLE);
+
         pause();
     }
 
-    function pause() public onlyOwner {
+    /* admin stuff */
+
+    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 
-    function safeMint(address to) public onlyOwner {
+    /* admin stuff */
+
+    function safeMint(address to) public onlyRole(MINTER_ROLE) whenNotPaused {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
+        _revokeRole(MINTER_ROLE, to);
+        _grantRole(MINTED_ROLE, to);
     }
 
     function _beforeTokenTransfer(
@@ -49,6 +62,11 @@ contract SeniorityBadge is
         address to,
         uint256 tokenId
     ) internal override(ERC721, ERC721Enumerable) whenNotPaused {
+        require(
+            hasRole(MINTER_ROLE, msg.sender) ||
+                hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "not a MINTER or ADMIN"
+        );
         super._beforeTokenTransfer(from, to, tokenId);
     }
 

@@ -6,6 +6,7 @@ const {
   expectEvent, // Assertions for emitted events
   expectRevert, // Assertions for transactions that should fail
 } = require("@openzeppelin/test-helpers");
+const { BigNumber } = require("ethers");
 
 describe("Seniority Badge Contract", function () {
   let contract, deployment;
@@ -160,6 +161,172 @@ describe("Seniority Badge Contract", function () {
       );
     });
   });
-  describe("Mint", function () {});
-  describe("Transactions", function () {});
+  describe("Mint", function () {
+    it("Owner should be able to mint when not paused", async function () {
+      await deployment.connect(owner).unpause();
+      await deployment.connect(owner).safeMint(owner.address);
+
+      expect(await deployment.balanceOf(owner.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+
+    it("Others should not be able to mint when not paused", async function () {
+      await deployment.connect(owner).unpause();
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).safeMint(userAddr1.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(0)
+      );
+    });
+
+    it("ADMIN MINT should not be able to mint when not paused", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_admin_role = await deployment.MINTER_ADMIN_ROLE();
+      await deployment
+        .connect(owner)
+        .grantRole(minter_admin_role, userAddr1.address);
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).safeMint(userAddr1.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(0)
+      );
+    });
+
+    it("MINTER role should be able to mint when not paused", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_role = await deployment.MINTER_ROLE();
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+
+    it("MINTER role should not be able to mint when paused", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_role = await deployment.MINTER_ROLE();
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(owner).pause();
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).safeMint(userAddr1.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(0)
+      );
+    });
+  });
+  describe("Transactions", function () {
+    it("MINTER role should not be able to transfer", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_role = await deployment.MINTER_ROLE();
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await deployment.connect(userAddr1).approve(userAddr2.address, 0);
+
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr1)
+          .transferFrom(userAddr1.address, userAddr2.address, 0)
+      );
+
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(0)
+      );
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+
+    it("ADMIN MINT role should not be able to transfer", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_role = await deployment.MINTER_ROLE();
+      let minter_admin_role = await deployment.MINTER_ADMIN_ROLE();
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+      await deployment
+        .connect(owner)
+        .grantRole(minter_admin_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await deployment.connect(userAddr1).approve(userAddr2.address, 0);
+
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr1)
+          .transferFrom(userAddr1.address, userAddr2.address, 0)
+      );
+
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(0)
+      );
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+
+    it("ADMIN DEFAULT role should be able to transfer with approval", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await deployment.connect(userAddr1).approve(owner.address, 0);
+
+      await deployment
+        .connect(owner)
+        .transferFrom(userAddr1.address, userAddr2.address, 0);
+
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(1)
+      );
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(0)
+      );
+    });
+
+    it("ADMIN DEFAULT role should not be able to transfer without approval", async function () {
+      await deployment.connect(owner).unpause();
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      await expectRevert.unspecified(
+        deployment
+          .connect(owner)
+          .transferFrom(userAddr1.address, userAddr2.address, 0)
+      );
+
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(0)
+      );
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+  });
 });

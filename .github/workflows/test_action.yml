@@ -18,8 +18,14 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: "16.x"
+
       - name: Install dependencies
-        env:
-          NODE_APY_KEY: ${{ secrets.NODE_APY_KEY }}
         run: npm install
+
+      - name: Create .env file
+        run: |
+          touch .env
+          echo NODE_APY_KEY=${{ secrets.NODE_APY_KEY }} >> .env
+
+      - name: Run hardhat tests
       - run: npx hardhat test

@@ -3,15 +3,16 @@
  */
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
+require("dotenv").config({ path: __dirname + "/.env" });
 
-const { NODE_API_KEY } = require("./secrets.json");
+const API_KEY = process.env.NODE_APY_KEY;
 
 module.exports = {
   networks: {
     hardhat: {
       // forked mainnet used for testing
       forking: {
-        url: `https://polygon-mainnet.g.alchemy.com/v2/${NODE_API_KEY}`,
+        url: `https://polygon-mainnet.g.alchemy.com/v2/${API_KEY}`,
       },
     },
   },

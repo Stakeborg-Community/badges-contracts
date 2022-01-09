@@ -351,3 +351,7 @@ describe("Seniority Badge Contract", function () {
     });
   });
 });
+
+describe("Seniority Badge Contract Upgrades", function () {
+  it("does nothing for now", async function () {});
+});

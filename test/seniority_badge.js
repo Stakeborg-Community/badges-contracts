@@ -35,10 +35,8 @@ describe("Seniority Badge Contract", function () {
       expect(await deployment.paused()).to.equal(true);
     });
 
-    xit("Others should not be able to unpause", async function () {
-      expect(await deployment.connect(userAddr1).unpause()).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      );
+    it("Others should not be able to unpause", async function () {
+      await expectRevert.unspecified(deployment.connect(userAddr1).unpause());
       expect(await deployment.paused()).to.equal(true);
     });
 
@@ -47,11 +45,9 @@ describe("Seniority Badge Contract", function () {
       expect(await deployment.paused()).to.equal(false);
     });
 
-    xit("Others should not be able to pause", async function () {
+    it("Others should not be able to pause", async function () {
       await deployment.connect(owner).unpause();
-      expect(await deployment.connect(userAddr1).pause()).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      );
+      await expectRevert.unspecified(deployment.connect(userAddr1).pause());
       expect(await deployment.paused()).to.equal(false);
     });
 
@@ -101,24 +97,24 @@ describe("Seniority Badge Contract", function () {
       ).to.equal(true);
     });
 
-    xit("MINTER ADMIN should not be able to set MINTER ADMIN", async function () {
+    it("MINTER ADMIN should not be able to set MINTER ADMIN", async function () {
       let minter_admin_role = await deployment.MINTER_ADMIN_ROLE();
       await deployment
         .connect(owner)
         .grantRole(minter_admin_role, userAddr1.address);
 
-      await expectRevert(
+      await expectRevert.unspecified(
         deployment
           .connect(userAddr1)
-          .grantRole(minter_admin_role, userAddr2.address),
-        `AccessControl: account ${userAddr1.address} is missing role 0x0000000000000000000000000000000000000000000000000000000000000000`
+          .grantRole(minter_admin_role, userAddr2.address)
       );
 
       expect(
         await deployment.hasRole(minter_admin_role, userAddr2.address)
       ).to.equal(false);
     });
-
+  });
+  describe("Whitelist", function () {
     it("Owner should be able to set MINTER", async function () {
       let minter_role = await deployment.MINTER_ROLE();
       let minter_admin_role = await deployment.MINTER_ADMIN_ROLE();
@@ -164,7 +160,6 @@ describe("Seniority Badge Contract", function () {
       );
     });
   });
-  describe("Whitelist", function () {});
   describe("Mint", function () {});
   describe("Transactions", function () {});
 });

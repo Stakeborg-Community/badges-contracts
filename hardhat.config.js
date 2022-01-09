@@ -5,6 +5,8 @@ require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 require("dotenv").config({ path: __dirname + "/.env" });
 
+console.log(__dirname + "/.env");
+
 const API_KEY = process.env.NODE_APY_KEY;
 
 module.exports = {

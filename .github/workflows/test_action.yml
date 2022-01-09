@@ -19,5 +19,7 @@ jobs:
         with:
           node-version: "16.x"
       - name: Install dependencies
+        env:
+          NODE_APY_KEY: ${{ secrets.NODE_APY_KEY }}
         run: npm install
       - run: npx hardhat test

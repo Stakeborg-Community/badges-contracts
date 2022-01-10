@@ -183,7 +183,95 @@ describe("Seniority Badge Contract", function () {
         true
       );
     });
+
+    it("MINTER ADMIN should not be able to set MINTER twice", async function () {
+      let minter_role = await deployment.MINTER_ROLE();
+      let minter_admin_role = await deployment.MINTER_ADMIN_ROLE();
+
+      await deployment.connect(owner).unpause();
+
+      await deployment
+        .connect(owner)
+        .grantRole(minter_admin_role, userAddr1.address);
+
+      expect(
+        await deployment.hasRole(minter_admin_role, userAddr1.address)
+      ).to.equal(true);
+      expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
+        false
+      );
+      expect(
+        await deployment.hasRole(minter_admin_role, userAddr2.address)
+      ).to.equal(false);
+      expect(await deployment.hasRole(minter_role, userAddr2.address)).to.equal(
+        false
+      );
+
+      await deployment
+        .connect(userAddr1)
+        .grantRole(minter_role, userAddr2.address);
+
+      expect(
+        await deployment.hasRole(minter_admin_role, userAddr2.address)
+      ).to.equal(false);
+      expect(await deployment.hasRole(minter_role, userAddr2.address)).to.equal(
+        true
+      );
+
+      await deployment.connect(userAddr2).safeMint(userAddr2.address);
+
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(1)
+      );
+
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).grantRole(minter_role, userAddr2.address)
+      );
+
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(1)
+      );
+    });
+
+    it("DEFAULT ADMIN should be able to set MINTER twice", async function () {
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
+        true
+      );
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+
+      expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
+        false
+      );
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
+        true
+      );
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(2)
+      );
+
+      expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
+        false
+      );
+    });
   });
+
   describe("Mint", function () {
     it("Owner should be able to mint when not paused", async function () {
       await deployment.connect(owner).unpause();

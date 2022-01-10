@@ -65,6 +65,27 @@ contract SeniorityBadge is
         _grantRole(MINTED_ROLE, to);
     }
 
+    // overrides for some custom functionality
+
+    // avoid setting MINTER twice, only DEFAULT ADMIN
+    function _grantRole(bytes32 role, address account)
+        internal
+        override(AccessControl)
+    {
+        if (
+            !hasRole(DEFAULT_ADMIN_ROLE, msg.sender) &&
+            hasRole(MINTED_ROLE, account) &&
+            role == MINTER_ROLE
+        )
+            revert(
+                string(
+                    abi.encodePacked("Only DEFAULT ADMIN can set MINTER twice")
+                )
+            );
+        super._grantRole(role, account);
+    }
+
+    // MINTER needs it for minting, DEFAULT ADMIN can transfer with approval from owner
     function _beforeTokenTransfer(
         address from,
         address to,

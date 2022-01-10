@@ -138,6 +138,7 @@ describe("Seniority Badge Contract", function () {
       ).to.equal(false);
     });
   });
+
   describe("Whitelist", function () {
     it("Owner should be able to set MINTER", async function () {
       let minter_role = await deployment.MINTER_ROLE();
@@ -233,7 +234,7 @@ describe("Seniority Badge Contract", function () {
       );
     });
 
-    it("DEFAULT ADMIN should be able to set MINTER twice", async function () {
+    it("DEFAULT ADMIN should not be able to set MINTER twice", async function () {
       let minter_role = await deployment.MINTER_ROLE();
 
       await deployment.connect(owner).unpause();
@@ -254,20 +255,16 @@ describe("Seniority Badge Contract", function () {
         false
       );
 
-      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
-
-      expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
-        true
-      );
-
-      await deployment.connect(userAddr1).safeMint(userAddr1.address);
-
-      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
-        BigNumber.from(2)
+      await expectRevert.unspecified(
+        deployment.connect(owner).grantRole(minter_role, userAddr1.address)
       );
 
       expect(await deployment.hasRole(minter_role, userAddr1.address)).to.equal(
         false
+      );
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
       );
     });
   });
@@ -338,28 +335,6 @@ describe("Seniority Badge Contract", function () {
 
       expect(await deployment.balanceOf(userAddr1.address)).to.eql(
         BigNumber.from(0)
-      );
-    });
-
-    it("Should not mint over MAX_SUPPLY on same user", async function () {
-      await deployment.connect(owner).unpause();
-
-      await deployment.connect(owner).setMaxSupply(1);
-
-      let minter_role = await deployment.MINTER_ROLE();
-
-      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
-
-      await deployment.connect(userAddr1).safeMint(userAddr1.address);
-
-      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
-
-      await expectRevert.unspecified(
-        deployment.connect(userAddr1).safeMint(userAddr1.address)
-      );
-
-      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
-        BigNumber.from(1)
       );
     });
 
@@ -437,6 +412,7 @@ describe("Seniority Badge Contract", function () {
       );
     });
   });
+
   describe("Transactions", function () {
     it("MINTER role should not be able to transfer", async function () {
       await deployment.connect(owner).unpause();
@@ -534,6 +510,76 @@ describe("Seniority Badge Contract", function () {
       expect(await deployment.balanceOf(userAddr1.address)).to.eql(
         BigNumber.from(1)
       );
+    });
+  });
+
+  describe("Art", function () {
+    it("Sets URI correctly single", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setURI("test_string");
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+
+      expect(await deployment.tokenURI(0)).to.eql("test_string");
+    });
+
+    it("Sets URI correctly multiple", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setURI("test_string");
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+      await deployment.connect(owner).grantRole(minter_role, userAddr2.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+      await deployment.connect(userAddr2).safeMint(userAddr2.address);
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+      expect(await deployment.balanceOf(userAddr2.address)).to.eql(
+        BigNumber.from(1)
+      );
+
+      expect(await deployment.tokenURI(0)).to.eql("test_string");
+      expect(await deployment.tokenURI(1)).to.eql("test_string");
+    });
+
+    it("Updates URI", async function () {
+      await deployment.connect(owner).unpause();
+
+      await deployment.connect(owner).setURI("test_string");
+
+      let minter_role = await deployment.MINTER_ROLE();
+
+      await deployment.connect(owner).grantRole(minter_role, userAddr1.address);
+
+      await deployment.connect(userAddr1).safeMint(userAddr1.address);
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+
+      expect(await deployment.tokenURI(0)).to.eql("test_string");
+
+      await deployment.connect(owner).setURI("test_string_update");
+
+      expect(await deployment.balanceOf(userAddr1.address)).to.eql(
+        BigNumber.from(1)
+      );
+
+      expect(await deployment.tokenURI(0)).to.eql("test_string_update");
     });
   });
 });

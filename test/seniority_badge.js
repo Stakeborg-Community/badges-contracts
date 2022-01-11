@@ -243,6 +243,53 @@ describe("Seniority Badge Contract", function () {
         await deployment.balanceOf(userAddr3.address, BOOTSTRAPPER)
       ).to.equal(0);
     });
+
+    it("ADMIN should be able to change supply", async function () {
+      await deployment.connect(owner).unpause();
+      await deployment.connect(owner).setBootstrapperSupply(1);
+
+      let MINTER_BOOTSTRAPPER_ROLE =
+        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+
+      await deployment
+        .connect(owner)
+        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+      await deployment
+        .connect(owner)
+        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr2.address);
+      await deployment
+        .connect(owner)
+        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr3.address);
+
+      await deployment.connect(userAddr1).mint();
+      await expectRevert.unspecified(deployment.connect(userAddr2).mint());
+      await expectRevert.unspecified(deployment.connect(userAddr3).mint());
+
+      expect(
+        await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr3.address, BOOTSTRAPPER)
+      ).to.equal(0);
+
+      await deployment.connect(owner).setBootstrapperSupply(2);
+
+      await deployment.connect(userAddr2).mint();
+
+      expect(
+        await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr3.address, BOOTSTRAPPER)
+      ).to.equal(0);
+    });
   });
 
   describe("Transactions", function () {

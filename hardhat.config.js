@@ -3,6 +3,7 @@
  */
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
+require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 const API_KEY = process.env.NODE_APY_KEY;

@@ -21,17 +21,17 @@ contract SeniorityBadge is
 {
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    uint256 public constant BOOTSTRAPPER = 0;
-    uint256 public constant VETERAN = 1;
-    uint256 public constant ADOPTER = 2;
-    uint256 public constant SUSTAINER = 3;
-    uint256 public constant BELIEVER = 4;
+    uint256 public BOOTSTRAPPER;
+    uint256 public VETERAN;
+    uint256 public ADOPTER;
+    uint256 public SUSTAINER;
+    uint256 public BELIEVER;
 
-    uint256 public BOOTSTRAPPER_SUPPLY = 50;
-    uint256 public VETERAN_SUPPLY = 100;
-    uint256 public ADOPTER_SUPPLY = 250;
-    uint256 public SUSTAINER_SUPPLY = 500;
-    uint256 public BELIEVER_SUPPLY = 1000;
+    uint256 public BOOTSTRAPPER_SUPPLY;
+    uint256 public VETERAN_SUPPLY;
+    uint256 public ADOPTER_SUPPLY;
+    uint256 public SUSTAINER_SUPPLY;
+    uint256 public BELIEVER_SUPPLY;
 
     CountersUpgradeable.Counter private _bootstrapperCounter;
     CountersUpgradeable.Counter private _veteranCounter;
@@ -40,6 +40,8 @@ contract SeniorityBadge is
     CountersUpgradeable.Counter private _believerCounter;
 
     //admin roles
+    bytes32 public constant SUPPLY_SETTER_ROLE =
+        keccak256("SUPPLY_SETTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
@@ -59,20 +61,32 @@ contract SeniorityBadge is
 
     bytes32 public constant MINTED_ROLE = keccak256("MINTED_ROLE");
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
     function initialize() public initializer {
-        __ERC1155_init("https://stakeborgdao.xyz/api/badge/{id}.json");
+        __ERC1155_init(
+            "https://stakeborgdao.xyz/api/badge/seniority/{id}.json"
+        );
         __AccessControl_init();
         __Pausable_init();
         __ERC1155Burnable_init();
         __ERC1155Supply_init();
         __UUPSUpgradeable_init();
 
+        __init_variables();
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _grantRole(URI_SETTER_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
+        _grantRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(SUPPLY_SETTER_ROLE, msg.sender);
+
+        _setRoleAdmin(URI_SETTER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(PAUSER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(UPGRADER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(SUPPLY_SETTER_ROLE, DEFAULT_ADMIN_ROLE);
 
         _grantRole(MINTER_ADMIN_ROLE, msg.sender);
 
@@ -82,6 +96,22 @@ contract SeniorityBadge is
         _setRoleAdmin(MINTER_ADOPTER_ROLE, MINTER_ADMIN_ROLE);
         _setRoleAdmin(MINTER_SUSTAINER_ROLE, MINTER_ADMIN_ROLE);
         _setRoleAdmin(MINTER_BELIEVER_ROLE, MINTER_ADMIN_ROLE);
+
+        pause();
+    }
+
+    function __init_variables() internal onlyInitializing {
+        BOOTSTRAPPER = 0;
+        VETERAN = 1;
+        ADOPTER = 2;
+        SUSTAINER = 3;
+        BELIEVER = 4;
+
+        BOOTSTRAPPER_SUPPLY = 50;
+        VETERAN_SUPPLY = 100;
+        ADOPTER_SUPPLY = 250;
+        SUSTAINER_SUPPLY = 500;
+        BELIEVER_SUPPLY = 1000;
     }
 
     function setURI(string memory newuri) public onlyRole(URI_SETTER_ROLE) {
@@ -96,18 +126,49 @@ contract SeniorityBadge is
         _unpause();
     }
 
-    function mint(
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public {
+    function setBootstrapperSupply(uint256 newSupply)
+        public
+        onlyRole(SUPPLY_SETTER_ROLE)
+    {
+        BOOTSTRAPPER_SUPPLY = newSupply;
+    }
+
+    function setVeteranSupply(uint256 newSupply)
+        public
+        onlyRole(SUPPLY_SETTER_ROLE)
+    {
+        VETERAN_SUPPLY = newSupply;
+    }
+
+    function setAdopterSupply(uint256 newSupply)
+        public
+        onlyRole(SUPPLY_SETTER_ROLE)
+    {
+        ADOPTER_SUPPLY = newSupply;
+    }
+
+    function setSustainerSupply(uint256 newSupply)
+        public
+        onlyRole(SUPPLY_SETTER_ROLE)
+    {
+        SUSTAINER_SUPPLY = newSupply;
+    }
+
+    function setBelieverSupply(uint256 newSupply)
+        public
+        onlyRole(SUPPLY_SETTER_ROLE)
+    {
+        BELIEVER_SUPPLY = newSupply;
+    }
+
+    function mint() public whenNotPaused {
         if (hasRole(MINTER_BOOTSTRAPPER_ROLE, msg.sender)) {
             _bootstrapperCounter.increment();
             require(
                 _bootstrapperCounter.current() <= BOOTSTRAPPER_SUPPLY,
                 "Exceeded max supply"
             );
-            _mint(msg.sender, BOOTSTRAPPER, 1, data);
+            _mint(msg.sender, BOOTSTRAPPER, 1, "");
             _revokeRole(MINTER_BOOTSTRAPPER_ROLE, msg.sender);
         }
         if (hasRole(MINTER_VETERAN_ROLE, msg.sender)) {
@@ -116,7 +177,7 @@ contract SeniorityBadge is
                 _veteranCounter.current() <= VETERAN_SUPPLY,
                 "Exceeded max supply"
             );
-            _mint(msg.sender, VETERAN, 1, data);
+            _mint(msg.sender, VETERAN, 1, "");
             _revokeRole(MINTER_VETERAN_ROLE, msg.sender);
         }
         if (hasRole(MINTER_ADOPTER_ROLE, msg.sender)) {
@@ -125,7 +186,7 @@ contract SeniorityBadge is
                 _adopterCounter.current() <= ADOPTER_SUPPLY,
                 "Exceeded max supply"
             );
-            _mint(msg.sender, ADOPTER, 1, data);
+            _mint(msg.sender, ADOPTER, 1, "");
             _revokeRole(MINTER_ADOPTER_ROLE, msg.sender);
         }
         if (hasRole(MINTER_SUSTAINER_ROLE, msg.sender)) {
@@ -134,7 +195,7 @@ contract SeniorityBadge is
                 _sustainerCounter.current() <= SUSTAINER_SUPPLY,
                 "Exceeded max supply"
             );
-            _mint(msg.sender, SUSTAINER, 1, data);
+            _mint(msg.sender, SUSTAINER, 1, "");
             _revokeRole(MINTER_SUSTAINER_ROLE, msg.sender);
         }
         if (hasRole(MINTER_BELIEVER_ROLE, msg.sender)) {
@@ -143,7 +204,7 @@ contract SeniorityBadge is
                 _believerCounter.current() <= BELIEVER_SUPPLY,
                 "Exceeded max supply"
             );
-            _mint(msg.sender, BELIEVER, 1, data);
+            _mint(msg.sender, BELIEVER, 1, "");
             _revokeRole(MINTER_BELIEVER_ROLE, msg.sender);
         }
         _grantRole(MINTED_ROLE, msg.sender);
@@ -161,6 +222,10 @@ contract SeniorityBadge is
         override(ERC1155Upgradeable, ERC1155SupplyUpgradeable)
         whenNotPaused
     {
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+
+        // transfers available only during minting or by ADMIN.
+        // transfers made by ADMIN require allowance from user
         require(
             hasRole(MINTER_BOOTSTRAPPER_ROLE, msg.sender) ||
                 hasRole(MINTER_VETERAN_ROLE, msg.sender) ||
@@ -170,7 +235,6 @@ contract SeniorityBadge is
                 hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "not a MINTER or ADMIN"
         );
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
     function _authorizeUpgrade(address newImplementation)

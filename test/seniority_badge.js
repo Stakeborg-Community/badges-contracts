@@ -397,3 +397,88 @@ describe("Seniority Badge Contract", function () {
 
   describe("Art", function () {});
 });
+
+describe("Seniority Badge Upgrade", function () {
+  describe("Deployment", function () {
+    it("Should upgrade", async function () {
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      await deployment.deployed();
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+    });
+
+    it("Upgrade should have new tokenid", async function () {
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      await deployment.deployed();
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+      await deploymentV2.upgradeToV2();
+
+      expect(await deploymentV2.BOOTSTRAPPER()).to.equal(0);
+      expect(await deploymentV2.BOOTSTRAPPER_SUPPLY()).to.equal(50);
+
+      expect(await deploymentV2.TEST()).to.equal(5);
+      expect(await deploymentV2.TEST_SUPPLY()).to.equal(1);
+    });
+
+    it("Admin should be able to transfer TEST token on upgraded contract with allowance", async function () {
+      let owner;
+      let userAddr1;
+      let userAddr2;
+
+      [owner, userAddr1, userAddr2] = await ethers.getSigners();
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      await deployment.deployed();
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+      await deploymentV2.upgradeToV2();
+
+      let DEFAULT_ADMIN_ROLE = await deploymentV2.DEFAULT_ADMIN_ROLE();
+
+      await deploymentV2.connect(owner).unpause();
+
+      let MINTER_TEST_ROLE = await deploymentV2.MINTER_TEST_ROLE();
+      let TEST = await deploymentV2.TEST();
+
+      await deploymentV2
+        .connect(owner)
+        .grantRole(MINTER_TEST_ROLE, userAddr1.address);
+
+      await deploymentV2.connect(userAddr1).mint();
+      await deploymentV2
+        .connect(userAddr1)
+        .setApprovalForAll(owner.address, true);
+
+      await deploymentV2
+        .connect(owner)
+        .safeTransferFrom(userAddr1.address, userAddr2.address, TEST, 1, 0);
+
+      expect(await deploymentV2.balanceOf(userAddr1.address, TEST)).to.equal(0);
+      expect(await deploymentV2.balanceOf(userAddr2.address, TEST)).to.equal(1);
+    });
+  });
+});

@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
-contract SeniorityBadge is
+contract SeniorityBadgeV2 is
     Initializable,
     ERC1155Upgradeable,
     AccessControlUpgradeable,
@@ -38,6 +38,7 @@ contract SeniorityBadge is
     CountersUpgradeable.Counter private _adopterCounter;
     CountersUpgradeable.Counter private _sustainerCounter;
     CountersUpgradeable.Counter private _believerCounter;
+    CountersUpgradeable.Counter private _testRoleCounter;
 
     //admin roles
     bytes32 public constant SUPPLY_SETTER_ROLE =
@@ -60,6 +61,11 @@ contract SeniorityBadge is
         keccak256("MINTER_BELIEVER_ROLE");
 
     bytes32 public constant MINTED_ROLE = keccak256("MINTED_ROLE");
+
+    uint256 public TEST;
+    uint256 public TEST_SUPPLY;
+    bytes32 public constant MINTER_TEST_ROLE = keccak256("MINTER_TEST_ROLE");
+    bool upgradedToV2;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -98,6 +104,14 @@ contract SeniorityBadge is
         _setRoleAdmin(MINTER_BELIEVER_ROLE, MINTER_ADMIN_ROLE);
 
         pause();
+    }
+
+    function upgradeToV2() public {
+        require(!upgradedToV2);
+        upgradedToV2 = true;
+        TEST = 5;
+        TEST_SUPPLY = 1;
+        _setRoleAdmin(MINTER_TEST_ROLE, MINTER_ADMIN_ROLE);
     }
 
     function __init_variables() internal onlyInitializing {
@@ -161,6 +175,13 @@ contract SeniorityBadge is
         BELIEVER_SUPPLY = newSupply;
     }
 
+    function setTestroleSupply(uint256 newSupply)
+        public
+        onlyRole(SUPPLY_SETTER_ROLE)
+    {
+        TEST_SUPPLY = newSupply;
+    }
+
     function mint() public whenNotPaused {
         if (hasRole(MINTER_BOOTSTRAPPER_ROLE, msg.sender)) {
             _bootstrapperCounter.increment();
@@ -207,6 +228,15 @@ contract SeniorityBadge is
             _mint(msg.sender, BELIEVER, 1, "");
             _revokeRole(MINTER_BELIEVER_ROLE, msg.sender);
         }
+        if (hasRole(MINTER_TEST_ROLE, msg.sender)) {
+            _testRoleCounter.increment();
+            require(
+                _testRoleCounter.current() <= TEST_SUPPLY,
+                "Exceeded max supply"
+            );
+            _mint(msg.sender, TEST, 1, "");
+            _revokeRole(MINTER_TEST_ROLE, msg.sender);
+        }
         _grantRole(MINTED_ROLE, msg.sender);
     }
 
@@ -230,6 +260,7 @@ contract SeniorityBadge is
                 hasRole(MINTER_ADOPTER_ROLE, operator) ||
                 hasRole(MINTER_SUSTAINER_ROLE, operator) ||
                 hasRole(MINTER_BELIEVER_ROLE, operator) ||
+                hasRole(MINTER_TEST_ROLE, operator) ||
                 hasRole(DEFAULT_ADMIN_ROLE, operator),
             "not a MINTER or ADMIN"
         );

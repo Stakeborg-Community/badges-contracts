@@ -395,7 +395,15 @@ describe("Seniority Badge Contract", function () {
     });
   });
 
-  describe("Art", function () {});
+  describe("Art", function () {
+    it("Should have URI", async function () {
+      await deployment.connect(owner).unpause();
+
+      expect(await deployment.uri(1)).to.equal(
+        "https://stakeborgdao.xyz/api/badge/seniority/{id}.json"
+      );
+    });
+  });
 });
 
 describe("Seniority Badge Upgrade", function () {
@@ -479,6 +487,60 @@ describe("Seniority Badge Upgrade", function () {
 
       expect(await deploymentV2.balanceOf(userAddr1.address, TEST)).to.equal(0);
       expect(await deploymentV2.balanceOf(userAddr2.address, TEST)).to.equal(1);
+    });
+
+    it("Admin should be able to transfer BOOTSTRAPPER token on upgraded contract with allowance after upgrade", async function () {
+      let owner;
+      let userAddr1;
+      let userAddr2;
+
+      [owner, userAddr1, userAddr2] = await ethers.getSigners();
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      await deployment.connect(owner).unpause();
+
+      let MINTER_BOOTSTRAPPER_ROLE =
+        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+
+      await deployment.deployed();
+
+      await deployment
+        .connect(owner)
+        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+
+      await deployment.connect(userAddr1).mint();
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+      await deploymentV2.upgradeToV2();
+
+      await deploymentV2
+        .connect(userAddr1)
+        .setApprovalForAll(owner.address, true);
+
+      await deploymentV2
+        .connect(owner)
+        .safeTransferFrom(
+          userAddr1.address,
+          userAddr2.address,
+          BOOTSTRAPPER,
+          1,
+          0
+        );
+
+      expect(
+        await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(0);
+      expect(
+        await deploymentV2.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(1);
     });
   });
 });

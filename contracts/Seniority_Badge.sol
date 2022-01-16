@@ -66,7 +66,7 @@ contract SeniorityBadge is
 
     function initialize() public initializer {
         __ERC1155_init(
-            "https://raw.githubusercontent.com/Stakeborg-Community/badges-contracts/dev-v0.2/res/{id}.json?token=GHSAT0AAAAAABPWMHEA4AAN7HDKO4DZKP52YPDARIA"
+            "https://stakeborgdao.xyz/api/badge/seniority/{id}.json"
         );
         __AccessControl_init();
         __Pausable_init();

@@ -15,8 +15,8 @@ describe("Seniority Badge Contract", function () {
   let userAddrs;
 
   beforeEach(async function () {
-    contract = await ethers.getContractFactory("SeniorityBadge");
-    deployment = await upgrades.deployProxy(contract);
+    const SeniorityBadge = await ethers.getContractFactory("SeniorityBadge");
+    deployment = await SeniorityBadge.deploy();
 
     await deployment.deployed();
 
@@ -406,7 +406,7 @@ describe("Seniority Badge Contract", function () {
   });
 });
 
-describe("Seniority Badge Upgrade", function () {
+xdescribe("Seniority Badge Upgrade", function () {
   describe("Deployment", function () {
     it("Should upgrade", async function () {
       const contract = await ethers.getContractFactory("SeniorityBadge");

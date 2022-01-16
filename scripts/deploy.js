@@ -1,28 +1,24 @@
 const hre = require("hardhat");
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-
-  console.log("Deploying contracts with the account:", deployer.address);
-
-  console.log("Account balance:", (await deployer.getBalance()).toString());
   // We get the contract to deploy
-  const Seniority_Badge = await hre.ethers.getContractFactory("SeniorityBadge");
-  const deployment = await hre.upgrades.deployProxy(Seniority_Badge);
 
-  await deployment.deployed();
+  console.log("Deploy script");
 
-  console.log("Seniority_Badge deployed to:", deployment.address);
+  const Contract = await ethers.getContractFactory("SeniorityBadge");
+  const contract = await Contract.deploy();
 
-  console.log(
-    "Implementation address: ",
-    await hre.upgrades.erc1967.getImplementationAddress(deployment.address)
-  );
+  await contract.deployed();
+
+  // This solves the bug in Mumbai network where the contract address is not the real one
+  const txHash = contract.deployTransaction.hash;
+  console.log(`Tx hash: ${txHash}\nWaiting for transaction to be mined...`);
+  const txReceipt = await ethers.provider.waitForTransaction(txHash);
+
+  console.log("Contract address:", txReceipt.contractAddress);
 
   await hre.run("verify:verify", {
-    address: await hre.upgrades.erc1967.getImplementationAddress(
-      deployment.address
-    ),
+    address: txReceipt.contractAddress,
   });
 }
 

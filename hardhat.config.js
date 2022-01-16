@@ -4,29 +4,27 @@
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
-require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
 const MUMBAI_API_KEY = process.env.MUMBAI_API_KEY;
-const MUMBAI_PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const POLYSCAN_API_KEY = process.env.POLYSCAN_API_KEY;
 
 module.exports = {
   networks: {
     hardhat: {
-      // forked mainnet used for testing
       forking: {
         url: `https://polygon-mainnet.g.alchemy.com/v2/${POLYGON_API_KEY}`,
       },
     },
     polygon: {
-      url: `https://polygon-mainnet.g.alchemy.com/v2/${MUMBAI_API_KEY}`,
-      accounts: [`${MUMBAI_PRIVATE_KEY}`],
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${POLYGON_API_KEY}`,
+      accounts: [`${PRIVATE_KEY}`],
     },
-    mumbai: {
+    polygonMumbai: {
       url: `https://polygon-mumbai.g.alchemy.com/v2/${MUMBAI_API_KEY}`,
-      accounts: [`${MUMBAI_PRIVATE_KEY}`],
+      accounts: [`${PRIVATE_KEY}`],
     },
   },
   etherscan: {
@@ -44,5 +42,11 @@ module.exports = {
         runs: 1000,
       },
     },
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
   },
 };

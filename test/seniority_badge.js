@@ -445,6 +445,49 @@ describe("Seniority Badge Upgrade", function () {
       expect(await deploymentV2.TEST_SUPPLY()).to.equal(1);
     });
 
+    it("Minted tokens should remain after upgrade", async function () {
+      let owner;
+      let userAddr1;
+      let userAddr2;
+
+      [owner, userAddr1, userAddr2] = await ethers.getSigners();
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      await deployment.connect(owner).unpause();
+
+      let MINTER_BOOTSTRAPPER_ROLE =
+        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+
+      await deployment.deployed();
+
+      await deployment
+        .connect(owner)
+        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+
+      await deployment.connect(userAddr1).mint();
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+      await deploymentV2.upgradeToV2();
+
+      expect(
+        await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+
+      await deploymentV2.connect(userAddr1).mint();
+
+      expect(
+        await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+    });
+
     it("Admin should be able to transfer TEST token on upgraded contract with allowance", async function () {
       let owner;
       let userAddr1;
@@ -464,8 +507,6 @@ describe("Seniority Badge Upgrade", function () {
 
       await deploymentV2.deployed();
       await deploymentV2.upgradeToV2();
-
-      let DEFAULT_ADMIN_ROLE = await deploymentV2.DEFAULT_ADMIN_ROLE();
 
       await deploymentV2.connect(owner).unpause();
 

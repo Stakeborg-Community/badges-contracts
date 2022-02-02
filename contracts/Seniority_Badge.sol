@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155Supp
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract SeniorityBadge is
     Initializable,
@@ -39,27 +40,25 @@ contract SeniorityBadge is
     CountersUpgradeable.Counter private _sustainerCounter;
     CountersUpgradeable.Counter private _believerCounter;
 
+    bytes32 public merkleRoot_bootstrapper;
+    bytes32 public merkleRoot_veteran;
+    bytes32 public merkleRoot_adopter;
+    bytes32 public merkleRoot_sustainer;
+    bytes32 public merkleRoot_believer;
+
+    mapping(address => bool) public bootstrapperClaimed;
+    mapping(address => bool) public veteranClaimed;
+    mapping(address => bool) public adopterClaimed;
+    mapping(address => bool) public sustainerClaimed;
+    mapping(address => bool) public believerClaimed;
+
     //admin roles
     bytes32 public constant SUPPLY_SETTER_ROLE =
         keccak256("SUPPLY_SETTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-
-    //minting roles
-    bytes32 public constant MINTER_ADMIN_ROLE = keccak256("MINTER_ADMIN_ROLE");
-    bytes32 public constant MINTER_BOOTSTRAPPER_ROLE =
-        keccak256("MINTER_BOOTSTRAPPER_ROLE");
-    bytes32 public constant MINTER_VETERAN_ROLE =
-        keccak256("MINTER_VETERAN_ROLE");
-    bytes32 public constant MINTER_ADOPTER_ROLE =
-        keccak256("MINTER_ADOPTER_ROLE");
-    bytes32 public constant MINTER_SUSTAINER_ROLE =
-        keccak256("MINTER_SUSTAINER_ROLE");
-    bytes32 public constant MINTER_BELIEVER_ROLE =
-        keccak256("MINTER_BELIEVER_ROLE");
-
-    bytes32 public constant MINTED_ROLE = keccak256("MINTED_ROLE");
+    bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -82,22 +81,15 @@ contract SeniorityBadge is
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
         _grantRole(SUPPLY_SETTER_ROLE, msg.sender);
+        _grantRole(WHITELISTER_ROLE, msg.sender);
 
         _setRoleAdmin(URI_SETTER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(PAUSER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(UPGRADER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(SUPPLY_SETTER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(WHITELISTER_ROLE, DEFAULT_ADMIN_ROLE);
 
-        _grantRole(MINTER_ADMIN_ROLE, msg.sender);
-
-        _setRoleAdmin(MINTER_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(MINTER_BOOTSTRAPPER_ROLE, MINTER_ADMIN_ROLE);
-        _setRoleAdmin(MINTER_VETERAN_ROLE, MINTER_ADMIN_ROLE);
-        _setRoleAdmin(MINTER_ADOPTER_ROLE, MINTER_ADMIN_ROLE);
-        _setRoleAdmin(MINTER_SUSTAINER_ROLE, MINTER_ADMIN_ROLE);
-        _setRoleAdmin(MINTER_BELIEVER_ROLE, MINTER_ADMIN_ROLE);
-
-        pause();
+        _pause();
     }
 
     function __init_variables() internal onlyInitializing {
@@ -114,100 +106,65 @@ contract SeniorityBadge is
         BELIEVER_SUPPLY = 1000;
     }
 
-    function setURI(string memory newuri) public onlyRole(URI_SETTER_ROLE) {
+    function setMerkleRoots(
+        bytes32 _bootstrapperMerkleRoot,
+        bytes32 _veteranMerkleRoot,
+        bytes32 _adopterMerkleRoot,
+        bytes32 _sustainerMerkleRoot,
+        bytes32 _believerMerkleRoot
+    ) external onlyRole(WHITELISTER_ROLE) {
+        merkleRoot_bootstrapper = _bootstrapperMerkleRoot;
+        merkleRoot_veteran = _veteranMerkleRoot;
+        merkleRoot_adopter = _adopterMerkleRoot;
+        merkleRoot_sustainer = _sustainerMerkleRoot;
+        merkleRoot_believer = _believerMerkleRoot;
+    }
+
+    function setURI(string memory newuri) external onlyRole(URI_SETTER_ROLE) {
         _setURI(newuri);
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
-    function setBootstrapperSupply(uint256 newSupply)
-        public
-        onlyRole(SUPPLY_SETTER_ROLE)
-    {
-        BOOTSTRAPPER_SUPPLY = newSupply;
+    function setSupply(
+        uint256 bootstrapperNewSupply,
+        uint256 veteranNewSupply,
+        uint256 adopterNewSupply,
+        uint256 sustainerNewSupply,
+        uint256 believerNewSupply
+    ) external onlyRole(SUPPLY_SETTER_ROLE) {
+        BOOTSTRAPPER_SUPPLY = bootstrapperNewSupply;
+        VETERAN_SUPPLY = veteranNewSupply;
+        ADOPTER_SUPPLY = adopterNewSupply;
+        SUSTAINER_SUPPLY = sustainerNewSupply;
+        BELIEVER_SUPPLY = believerNewSupply;
     }
 
-    function setVeteranSupply(uint256 newSupply)
-        public
-        onlyRole(SUPPLY_SETTER_ROLE)
+    function mintBootstrapper(bytes32[] calldata _proof)
+        external
+        whenNotPaused
     {
-        VETERAN_SUPPLY = newSupply;
-    }
+        require(!bootstrapperClaimed[msg.sender], "Already claimed");
+        require(
+            _bootstrapperCounter.current() < BOOTSTRAPPER_SUPPLY,
+            "Exceeded max supply"
+        );
 
-    function setAdopterSupply(uint256 newSupply)
-        public
-        onlyRole(SUPPLY_SETTER_ROLE)
-    {
-        ADOPTER_SUPPLY = newSupply;
-    }
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+        require(
+            MerkleProof.verify(_proof, merkleRoot_bootstrapper, leaf),
+            "Invalid proof"
+        );
 
-    function setSustainerSupply(uint256 newSupply)
-        public
-        onlyRole(SUPPLY_SETTER_ROLE)
-    {
-        SUSTAINER_SUPPLY = newSupply;
-    }
-
-    function setBelieverSupply(uint256 newSupply)
-        public
-        onlyRole(SUPPLY_SETTER_ROLE)
-    {
-        BELIEVER_SUPPLY = newSupply;
-    }
-
-    function mint() public whenNotPaused {
-        if (hasRole(MINTER_BOOTSTRAPPER_ROLE, msg.sender)) {
-            _bootstrapperCounter.increment();
-            require(
-                _bootstrapperCounter.current() <= BOOTSTRAPPER_SUPPLY,
-                "Exceeded max supply"
-            );
-            _mint(msg.sender, BOOTSTRAPPER, 1, "");
-            _revokeRole(MINTER_BOOTSTRAPPER_ROLE, msg.sender);
-        }
-        if (hasRole(MINTER_VETERAN_ROLE, msg.sender)) {
-            _veteranCounter.increment();
-            require(
-                _veteranCounter.current() <= VETERAN_SUPPLY,
-                "Exceeded max supply"
-            );
-            _mint(msg.sender, VETERAN, 1, "");
-            _revokeRole(MINTER_VETERAN_ROLE, msg.sender);
-        }
-        if (hasRole(MINTER_ADOPTER_ROLE, msg.sender)) {
-            _adopterCounter.increment();
-            require(
-                _adopterCounter.current() <= ADOPTER_SUPPLY,
-                "Exceeded max supply"
-            );
-            _mint(msg.sender, ADOPTER, 1, "");
-            _revokeRole(MINTER_ADOPTER_ROLE, msg.sender);
-        }
-        if (hasRole(MINTER_SUSTAINER_ROLE, msg.sender)) {
-            _sustainerCounter.increment();
-            require(
-                _sustainerCounter.current() <= SUSTAINER_SUPPLY,
-                "Exceeded max supply"
-            );
-            _mint(msg.sender, SUSTAINER, 1, "");
-            _revokeRole(MINTER_SUSTAINER_ROLE, msg.sender);
-        }
-        if (hasRole(MINTER_BELIEVER_ROLE, msg.sender)) {
-            _believerCounter.increment();
-            require(
-                _believerCounter.current() <= BELIEVER_SUPPLY,
-                "Exceeded max supply"
-            );
-            _mint(msg.sender, BELIEVER, 1, "");
-            _revokeRole(MINTER_BELIEVER_ROLE, msg.sender);
-        }
-        _grantRole(MINTED_ROLE, msg.sender);
+        _bootstrapperCounter.increment();
+        _mint(msg.sender, BOOTSTRAPPER, 1, "");
+        bootstrapperClaimed[msg.sender] = true;
     }
 
     function _beforeTokenTransfer(
@@ -222,18 +179,6 @@ contract SeniorityBadge is
         override(ERC1155Upgradeable, ERC1155SupplyUpgradeable)
         whenNotPaused
     {
-        // transfers available only during minting or by ADMIN.
-        // transfers made by ADMIN require allowance from user
-        require(
-            hasRole(MINTER_BOOTSTRAPPER_ROLE, operator) ||
-                hasRole(MINTER_VETERAN_ROLE, operator) ||
-                hasRole(MINTER_ADOPTER_ROLE, operator) ||
-                hasRole(MINTER_SUSTAINER_ROLE, operator) ||
-                hasRole(MINTER_BELIEVER_ROLE, operator) ||
-                hasRole(DEFAULT_ADMIN_ROLE, operator),
-            "not a MINTER or ADMIN"
-        );
-
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 

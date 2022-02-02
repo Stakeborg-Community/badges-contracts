@@ -16,6 +16,8 @@ describe("Seniority Badge Contract", function () {
   let userAddr1;
   let userAddr2;
   let userAddr3;
+  let userAddr4;
+  let userAddr5;
   let userAddrs;
 
   let leafNodes, tree;
@@ -26,11 +28,18 @@ describe("Seniority Badge Contract", function () {
 
     await deployment.deployed();
 
-    [owner, userAddr1, userAddr2, userAddr3, ...userAddrs] =
-      await ethers.getSigners();
+    [
+      owner,
+      userAddr1, //whitelisted
+      userAddr2,
+      userAddr3,
+      userAddr4, //not whitelisted
+      userAddr5,
+      ...userAddrs
+    ] = await ethers.getSigners();
 
-    leafNodes = whitelistAddresses.map((addr) => keccak256(addr));
-    tree = new MerkleTree(leafNodes, keccak256, { sortPairs: true });
+    leaves = whitelistAddresses.map((addr) => keccak256(addr));
+    tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
   });
 
   describe("Deployment", function () {
@@ -243,26 +252,27 @@ describe("Seniority Badge Contract", function () {
       await deployment
         .connect(owner)
         .setMerkleRoots(
-          "0x343750465941b29921f50a28e0e43050e5e1c2611a3ea8d7fe1001090d5e1436",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000000000000000000000000000000000000000000000"
         );
+
       deployment
         .connect(userAddr1)
-        .mintBootstrapper(tree.getHexProof(leafNodes[1]));
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
 
       await expectRevert.unspecified(
         deployment
-          .connect(userAddr2)
-          .mintBootstrapper(tree.getHexProof(leafNodes[1]))
+          .connect(userAddr4)
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr4.address)))
       );
       expect(
         await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
       expect(
-        await deployment.balanceOf(userAddr2.address, BOOTSTRAPPER)
+        await deployment.balanceOf(userAddr4.address, BOOTSTRAPPER)
       ).to.equal(0);
     });
 
@@ -272,74 +282,84 @@ describe("Seniority Badge Contract", function () {
       await deployment
         .connect(owner)
         .setMerkleRoots(
-          "0x343750465941b29921f50a28e0e43050e5e1c2611a3ea8d7fe1001090d5e1436",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x0000000000000000000000000000000000000000000000000000000000000000"
         );
+
       deployment
         .connect(userAddr1)
-        .mintBootstrapper(tree.getHexProof(leafNodes[1]));
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
 
       await expectRevert.unspecified(
         deployment
           .connect(userAddr1)
-          .mintBootstrapper(tree.getHexProof(leafNodes[1]))
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)))
       );
       expect(
         await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
     });
-    xit("Should not mint more than supply #1", async function () {
-      await deployment.connect(owner).unpause();
-      await deployment.connect(owner).setBootstrapperSupply(1);
 
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+    it("Should not mint more than supply #1", async function () {
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+      await deployment.connect(owner).unpause();
+      await deployment.connect(owner).setSupply(1, 0, 0, 0, 0);
 
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+
       await deployment
-        .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr2.address);
-
-      await deployment.connect(userAddr1).mint();
-      await expectRevert.unspecified(deployment.connect(userAddr2).mint());
-
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr2)
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr2.address)))
+      );
       expect(
         await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
-
       expect(
         await deployment.balanceOf(userAddr2.address, BOOTSTRAPPER)
       ).to.equal(0);
     });
 
-    xit("Should not mint more than supply #2", async function () {
-      await deployment.connect(owner).unpause();
-      await deployment.connect(owner).setBootstrapperSupply(2);
-
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+    it("Should not mint more than supply #2", async function () {
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+      await deployment.connect(owner).unpause();
+      await deployment.connect(owner).setSupply(2, 0, 0, 0, 0);
 
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
-      await deployment
-        .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr2.address);
-      await deployment
-        .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr3.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
 
-      await deployment.connect(userAddr1).mint();
-      await deployment.connect(userAddr2).mint();
-      await expectRevert.unspecified(deployment.connect(userAddr3).mint());
-
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr2)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr2.address)));
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr3)
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr3.address)))
+      );
       expect(
         await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
@@ -350,6 +370,34 @@ describe("Seniority Badge Contract", function () {
         await deployment.balanceOf(userAddr3.address, BOOTSTRAPPER)
       ).to.equal(0);
     });
+
+    it("Can not use proof of another leaf", async function () {
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+      await deployment.connect(owner).unpause();
+
+      await deployment
+        .connect(owner)
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr1)
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr3.address)))
+      );
+      expect(
+        await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(0);
+    });
+
+    xit("Should mint all types of NFT", async function () {});
+
+    xit("All types of NFT should have different supply limit", async function () {});
 
     xit("ADMIN should be able to change supply", async function () {
       await deployment.connect(owner).unpause();

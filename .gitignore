@@ -1,6 +1,7 @@
 node_modules
 artifacts
 cache
+coverage*
 .env
 .openzeppelin
 .DS_Store

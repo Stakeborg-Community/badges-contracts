@@ -5,6 +5,7 @@ require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 require("@openzeppelin/hardhat-upgrades");
+require('solidity-coverage')
 require("dotenv").config();
 
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY;

@@ -22,6 +22,10 @@ will install all dependencies
 
 will run all tests
 
+- > npx hardhat coverage
+
+will run all tests with code coverage
+
 - > npx hardhat node
 
 will start a local fork of the network

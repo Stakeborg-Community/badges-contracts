@@ -146,6 +146,15 @@ contract SeniorityBadge is
         BELIEVER_SUPPLY = believerNewSupply;
     }
 
+    function verifyMerkleProof(
+        bytes32[] memory proof,
+        bytes32 root,
+        address sender
+    ) internal pure returns (bool) {
+        bytes32 leaf = keccak256(abi.encodePacked(sender));
+        return MerkleProof.verify(proof, root, leaf);
+    }
+
     function mintBootstrapper(bytes32[] calldata _proof)
         external
         whenNotPaused
@@ -155,16 +164,90 @@ contract SeniorityBadge is
             _bootstrapperCounter.current() < BOOTSTRAPPER_SUPPLY,
             "Exceeded max supply"
         );
-
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
         require(
-            MerkleProof.verify(_proof, merkleRoot_bootstrapper, leaf),
+            verifyMerkleProof(_proof, merkleRoot_bootstrapper, msg.sender),
             "Invalid proof"
         );
 
         _bootstrapperCounter.increment();
         _mint(msg.sender, BOOTSTRAPPER, 1, "");
         bootstrapperClaimed[msg.sender] = true;
+    }
+
+    function mintVeteran(bytes32[] calldata _proof)
+        external
+        whenNotPaused
+    {
+        require(!veteranClaimed[msg.sender], "Already claimed");
+        require(
+            _veteranCounter.current() < VETERAN_SUPPLY,
+            "Exceeded max supply"
+        );
+        require(
+            verifyMerkleProof(_proof, merkleRoot_veteran, msg.sender),
+            "Invalid proof"
+        );
+
+        _veteranCounter.increment();
+        _mint(msg.sender, VETERAN, 1, "");
+        veteranClaimed[msg.sender] = true;
+    }
+
+    function mintAdopter(bytes32[] calldata _proof)
+        external
+        whenNotPaused
+    {
+        require(!adopterClaimed[msg.sender], "Already claimed");
+        require(
+            _adopterCounter.current() < ADOPTER_SUPPLY,
+            "Exceeded max supply"
+        );
+        require(
+            verifyMerkleProof(_proof, merkleRoot_adopter, msg.sender),
+            "Invalid proof"
+        );
+
+        _adopterCounter.increment();
+        _mint(msg.sender, ADOPTER, 1, "");
+        adopterClaimed[msg.sender] = true;
+    }
+
+    function mintSustainer(bytes32[] calldata _proof)
+        external
+        whenNotPaused
+    {
+        require(!sustainerClaimed[msg.sender], "Already claimed");
+        require(
+            _sustainerCounter.current() < SUSTAINER_SUPPLY,
+            "Exceeded max supply"
+        );
+        require(
+            verifyMerkleProof(_proof, merkleRoot_sustainer, msg.sender),
+            "Invalid proof"
+        );
+
+        _sustainerCounter.increment();
+        _mint(msg.sender, SUSTAINER, 1, "");
+        sustainerClaimed[msg.sender] = true;
+    }
+
+    function mintBeliever(bytes32[] calldata _proof)
+        external
+        whenNotPaused
+    {
+        require(!believerClaimed[msg.sender], "Already claimed");
+        require(
+            _believerCounter.current() < BELIEVER_SUPPLY,
+            "Exceeded max supply"
+        );
+        require(
+            verifyMerkleProof(_proof, merkleRoot_believer, msg.sender),
+            "Invalid proof"
+        );
+
+        _believerCounter.increment();
+        _mint(msg.sender, BELIEVER, 1, "");
+        believerClaimed[msg.sender] = true;
     }
 
     function _beforeTokenTransfer(

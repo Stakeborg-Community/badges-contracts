@@ -146,12 +146,11 @@ contract SeniorityBadge is
         BELIEVER_SUPPLY = believerNewSupply;
     }
 
-    function verifyMerkleProof(
+    function _verifyMerkleProof(
         bytes32[] memory proof,
-        bytes32 root,
-        address sender
-    ) internal pure returns (bool) {
-        bytes32 leaf = keccak256(abi.encodePacked(sender));
+        bytes32 root
+    ) internal view returns (bool) {
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
         return MerkleProof.verify(proof, root, leaf);
     }
 
@@ -165,7 +164,7 @@ contract SeniorityBadge is
             "Exceeded max supply"
         );
         require(
-            verifyMerkleProof(_proof, merkleRoot_bootstrapper, msg.sender),
+            _verifyMerkleProof(_proof, merkleRoot_bootstrapper),
             "Invalid proof"
         );
 
@@ -184,7 +183,7 @@ contract SeniorityBadge is
             "Exceeded max supply"
         );
         require(
-            verifyMerkleProof(_proof, merkleRoot_veteran, msg.sender),
+            _verifyMerkleProof(_proof, merkleRoot_veteran),
             "Invalid proof"
         );
 
@@ -203,7 +202,7 @@ contract SeniorityBadge is
             "Exceeded max supply"
         );
         require(
-            verifyMerkleProof(_proof, merkleRoot_adopter, msg.sender),
+            _verifyMerkleProof(_proof, merkleRoot_adopter),
             "Invalid proof"
         );
 
@@ -222,7 +221,7 @@ contract SeniorityBadge is
             "Exceeded max supply"
         );
         require(
-            verifyMerkleProof(_proof, merkleRoot_sustainer, msg.sender),
+            _verifyMerkleProof(_proof, merkleRoot_sustainer),
             "Invalid proof"
         );
 
@@ -241,7 +240,7 @@ contract SeniorityBadge is
             "Exceeded max supply"
         );
         require(
-            verifyMerkleProof(_proof, merkleRoot_believer, msg.sender),
+            _verifyMerkleProof(_proof, merkleRoot_believer),
             "Invalid proof"
         );
 

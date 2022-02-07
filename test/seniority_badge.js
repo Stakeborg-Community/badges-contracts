@@ -538,115 +538,112 @@ describe("Seniority Badge Contract", function () {
           "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3"
         );
 
-        await deployment
-          .connect(userAddr1)
-          .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
-        await deployment
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr2)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr2.address)));
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr3)
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr3.address)))
+      );
+
+      await deployment
+        .connect(userAddr1)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr1.address)));
+      await expectRevert.unspecified( 
+        deployment
           .connect(userAddr2)
-          .mintBootstrapper(tree.getHexProof(keccak256(userAddr2.address)));
-        await expectRevert.unspecified(
-          deployment
-            .connect(userAddr3)
-            .mintBootstrapper(tree.getHexProof(keccak256(userAddr3.address)))
-        );
+          .mintVeteran(tree.getHexProof(keccak256(userAddr2.address)))
+      );
 
-        await deployment
-          .connect(userAddr1)
-          .mintVeteran(tree.getHexProof(keccak256(userAddr1.address)));
-        await expectRevert.unspecified( 
-          deployment
-            .connect(userAddr2)
-            .mintVeteran(tree.getHexProof(keccak256(userAddr2.address)))
-        );
+      await deployment
+        .connect(userAddr1)
+        .mintAdopter(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr2)
+        .mintAdopter(tree.getHexProof(keccak256(userAddr2.address)));
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr3)
+          .mintAdopter(tree.getHexProof(keccak256(userAddr3.address)))
+      );
 
-        await deployment
-          .connect(userAddr1)
-          .mintAdopter(tree.getHexProof(keccak256(userAddr1.address)));
-        await deployment
+      await deployment
+        .connect(userAddr1)
+        .mintSustainer(tree.getHexProof(keccak256(userAddr1.address)));
+      await expectRevert.unspecified( 
+        deployment
           .connect(userAddr2)
-          .mintAdopter(tree.getHexProof(keccak256(userAddr2.address)));
-        await expectRevert.unspecified(
-          deployment
-            .connect(userAddr3)
-            .mintAdopter(tree.getHexProof(keccak256(userAddr3.address)))
-        );
+          .mintSustainer(tree.getHexProof(keccak256(userAddr2.address)))
+      );
 
-        await deployment
-          .connect(userAddr1)
-          .mintSustainer(tree.getHexProof(keccak256(userAddr1.address)));
-        await expectRevert.unspecified( 
-          deployment
-            .connect(userAddr2)
-            .mintSustainer(tree.getHexProof(keccak256(userAddr2.address)))
-        );
+      await deployment
+        .connect(userAddr1)
+        .mintBeliever(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr2)
+        .mintBeliever(tree.getHexProof(keccak256(userAddr2.address)));
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr3)
+          .mintBeliever(tree.getHexProof(keccak256(userAddr3.address)))
+      );
 
-        await deployment
-          .connect(userAddr1)
-          .mintBeliever(tree.getHexProof(keccak256(userAddr1.address)));
-        await deployment
-          .connect(userAddr2)
-          .mintBeliever(tree.getHexProof(keccak256(userAddr2.address)));
-        await expectRevert.unspecified(
-          deployment
-            .connect(userAddr3)
-            .mintBeliever(tree.getHexProof(keccak256(userAddr3.address)))
-        );
+      expect(
+        await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr1.address, VETERAN)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr1.address, ADOPTER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr1.address, SUSTAINER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr1.address, BELIEVER)
+      ).to.equal(1);
 
-        expect(
-          await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
-        ).to.equal(1);
-        expect(
-          await deployment.balanceOf(userAddr1.address, VETERAN)
-        ).to.equal(1);
-        expect(
-          await deployment.balanceOf(userAddr1.address, ADOPTER)
-        ).to.equal(1);
-        expect(
-          await deployment.balanceOf(userAddr1.address, SUSTAINER)
-        ).to.equal(1);
-        expect(
-          await deployment.balanceOf(userAddr1.address, BELIEVER)
-        ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr2.address, VETERAN)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr2.address, ADOPTER)
+      ).to.equal(1);
+      expect(
+        await deployment.balanceOf(userAddr2.address, SUSTAINER)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr2.address, BELIEVER)
+      ).to.equal(1);
 
-        expect(
-          await deployment.balanceOf(userAddr2.address, BOOTSTRAPPER)
-        ).to.equal(1);
-        expect(
-          await deployment.balanceOf(userAddr2.address, VETERAN)
-        ).to.equal(0);
-        expect(
-          await deployment.balanceOf(userAddr2.address, ADOPTER)
-        ).to.equal(1);
-        expect(
-          await deployment.balanceOf(userAddr2.address, SUSTAINER)
-        ).to.equal(0);
-        expect(
-          await deployment.balanceOf(userAddr2.address, BELIEVER)
-        ).to.equal(1);
-
-        expect(
-          await deployment.balanceOf(userAddr3.address, BOOTSTRAPPER)
-        ).to.equal(0);
-        expect(
-          await deployment.balanceOf(userAddr3.address, VETERAN)
-        ).to.equal(0);
-        expect(
-          await deployment.balanceOf(userAddr3.address, ADOPTER)
-        ).to.equal(0);
-        expect(
-          await deployment.balanceOf(userAddr3.address, SUSTAINER)
-        ).to.equal(0);
-        expect(
-          await deployment.balanceOf(userAddr3.address, BELIEVER)
-        ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr3.address, BOOTSTRAPPER)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr3.address, VETERAN)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr3.address, ADOPTER)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr3.address, SUSTAINER)
+      ).to.equal(0);
+      expect(
+        await deployment.balanceOf(userAddr3.address, BELIEVER)
+      ).to.equal(0);
     });
 
     it("ADMIN should be able to change supply", async function () {
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
       let VETERAN = await deployment.VETERAN();
-      let ADOPTER = await deployment.ADOPTER();
-      let SUSTAINER = await deployment.SUSTAINER();
-      let BELIEVER = await deployment.BELIEVER();
       await deployment.connect(owner).unpause();
       await deployment.connect(owner).setSupply(1, 0, 0, 0, 0);
 
@@ -719,21 +716,24 @@ describe("Seniority Badge Contract", function () {
   });
 
   describe("Transactions", function () {
-    xit("User should not be able to transfer", async function () {
-      await deployment.connect(owner).unpause();
-
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+    it("User should not be able to transfer", async function () {
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
-
+      await deployment.connect(owner).unpause();
+      
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
-      await deployment
-        .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr2.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
 
-      await deployment.connect(userAddr1).mint();
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+
       await expectRevert.unspecified(
         deployment
           .connect(userAddr1)
@@ -754,18 +754,24 @@ describe("Seniority Badge Contract", function () {
       ).to.equal(0);
     });
 
-    xit("Admin should be able to transfer with user allowance", async function () {
-      await deployment.connect(owner).unpause();
-
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+    it("Admin should be able to transfer with user allowance", async function () {
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
-
+      await deployment.connect(owner).unpause();
+      
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
 
-      await deployment.connect(userAddr1).mint();
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+
       await deployment
         .connect(userAddr1)
         .setApprovalForAll(owner.address, true);
@@ -787,18 +793,23 @@ describe("Seniority Badge Contract", function () {
       ).to.equal(1);
     });
 
-    xit("Admin should be not able to transfer without user allowance", async function () {
-      await deployment.connect(owner).unpause();
-
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
+    it("Admin should be not able to transfer without user allowance", async function () {
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
-
+      await deployment.connect(owner).unpause();
+      
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
 
-      await deployment.connect(userAddr1).mint();
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
 
       await expectRevert.unspecified(
         deployment
@@ -822,8 +833,28 @@ describe("Seniority Badge Contract", function () {
   });
 
   describe("Art", function () {
-    xit("Should have URI", async function () {
+    it("Should have URI", async function () {
       await deployment.connect(owner).unpause();
+
+      expect(await deployment.uri(1)).to.equal(
+        "https://stakeborgdao.xyz/api/badge/seniority/{id}.json"
+      );
+    });
+
+    it("Admin should be able to change uri", async function () {
+      await deployment.connect(owner).unpause();
+      await deployment.connect(owner).setURI("https://stakeborgdao.xyz/api/badge/seniority2/{id}.json");
+
+      expect(await deployment.uri(1)).to.equal(
+        "https://stakeborgdao.xyz/api/badge/seniority2/{id}.json"
+      );
+    });
+
+    it("User should not be able to change uri", async function () {
+      await deployment.connect(owner).unpause();
+      await expectRevert.unspecified(
+        deployment.connect(userAddr1).setURI("https://stakeborgdao.xyz/api/badge/seniority2/{id}.json")
+      );
 
       expect(await deployment.uri(1)).to.equal(
         "https://stakeborgdao.xyz/api/badge/seniority/{id}.json"

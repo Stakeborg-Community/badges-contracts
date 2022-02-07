@@ -5,7 +5,7 @@ Development stack:
 - [Hardhat](https://hardhat.org/)
 - [VSCode](https://code.visualstudio.com/)
 - [VSCode Solidity Extension](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
-- [Alchemy](alchemy.com)
+- [Alchemy](https://alchemy.com)
 - [OpenZeppelin](https://openzeppelin.com/)
 
 # How to set up development environment

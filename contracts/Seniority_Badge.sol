@@ -59,6 +59,7 @@ contract SeniorityBadge is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -168,9 +169,13 @@ contract SeniorityBadge is
             "Invalid proof"
         );
 
+        _grantRole(MINTER_ROLE, msg.sender);
+
         _bootstrapperCounter.increment();
         _mint(msg.sender, BOOTSTRAPPER, 1, "");
         bootstrapperClaimed[msg.sender] = true;
+
+        _revokeRole(MINTER_ROLE, msg.sender);
     }
 
     function mintVeteran(bytes32[] calldata _proof)
@@ -187,9 +192,13 @@ contract SeniorityBadge is
             "Invalid proof"
         );
 
+        _grantRole(MINTER_ROLE, msg.sender);
+
         _veteranCounter.increment();
         _mint(msg.sender, VETERAN, 1, "");
         veteranClaimed[msg.sender] = true;
+
+        _revokeRole(MINTER_ROLE, msg.sender);
     }
 
     function mintAdopter(bytes32[] calldata _proof)
@@ -206,9 +215,13 @@ contract SeniorityBadge is
             "Invalid proof"
         );
 
+        _grantRole(MINTER_ROLE, msg.sender);
+
         _adopterCounter.increment();
         _mint(msg.sender, ADOPTER, 1, "");
         adopterClaimed[msg.sender] = true;
+
+        _revokeRole(MINTER_ROLE, msg.sender);
     }
 
     function mintSustainer(bytes32[] calldata _proof)
@@ -225,9 +238,13 @@ contract SeniorityBadge is
             "Invalid proof"
         );
 
+        _grantRole(MINTER_ROLE, msg.sender);
+
         _sustainerCounter.increment();
         _mint(msg.sender, SUSTAINER, 1, "");
         sustainerClaimed[msg.sender] = true;
+
+        _revokeRole(MINTER_ROLE, msg.sender);
     }
 
     function mintBeliever(bytes32[] calldata _proof)
@@ -244,9 +261,13 @@ contract SeniorityBadge is
             "Invalid proof"
         );
 
+        _grantRole(MINTER_ROLE, msg.sender);
+
         _believerCounter.increment();
         _mint(msg.sender, BELIEVER, 1, "");
         believerClaimed[msg.sender] = true;
+
+        _revokeRole(MINTER_ROLE, msg.sender);
     }
 
     function _beforeTokenTransfer(
@@ -261,6 +282,8 @@ contract SeniorityBadge is
         override(ERC1155Upgradeable, ERC1155SupplyUpgradeable)
         whenNotPaused
     {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(MINTER_ROLE, msg.sender), 
+            "Token is not transferable");
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 

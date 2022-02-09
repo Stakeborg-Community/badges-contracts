@@ -8,8 +8,9 @@ const { BigNumber } = require("ethers");
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
 const whitelistAddresses = require("./../data/whitelist.json");
+const whitelistAddresses_v2 = require("./../data/whitelist_v2.json");
 
-describe("Seniority Badge Contract", function () {
+xdescribe("Seniority Badge Contract", function () {
   let contract, deployment;
 
   let owner;
@@ -1157,8 +1158,243 @@ describe("Seniority Badge Upgrade", function () {
   });
 
   describe("Upgrade data", () => {
-    xit("Can increase whitelist after upgrade without affecting next whitelist", async function () {});
-    xit("Can change whitelist after upgrade without affecting next whitelist", async function () {});
+    it("Can increase whitelist after upgrade without affecting next whitelist", async function () {
+      let owner;
+      let userAddr1;
+      let userAddr2;
+      let userAddr3;
+      let userAddr4;
+
+      [owner, userAddr1, userAddr2, userAddr3, userAddr4] =
+        await ethers.getSigners();
+
+      let leaves = whitelistAddresses.map((addr) => keccak256(addr));
+      let tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+      let VETERAN = await deployment.VETERAN();
+
+      await deployment.deployed();
+      await deployment.connect(owner).unpause();
+
+      await deployment
+        .connect(owner)
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+      await deploymentV2.upgradeToV2();
+
+      leaves = whitelistAddresses_v2.map((addr) => keccak256(addr));
+      tree_v2 = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
+      await deploymentV2.connect(owner).setMerkleRoots(
+        "0x5c0965c65dfb1547d128efb3e61004f43995418da2d36870318fd1d53a6ec3ab", //1,2,3,4
+        "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3", //1,2,3
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+
+      await deploymentV2
+        .connect(userAddr2)
+        .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr2.address)));
+      await deploymentV2
+        .connect(userAddr3)
+        .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr3.address)));
+      await deploymentV2
+        .connect(userAddr4)
+        .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr4.address)));
+
+      await expectRevert.unspecified(
+        deploymentV2
+          .connect(userAddr1)
+          .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr1.address)))
+      );
+      await expectRevert.unspecified(
+        deploymentV2
+          .connect(userAddr2)
+          .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr2.address)))
+      );
+      await expectRevert.unspecified(
+        deploymentV2
+          .connect(userAddr3)
+          .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr3.address)))
+      );
+      await expectRevert.unspecified(
+        deploymentV2
+          .connect(userAddr4)
+          .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr4.address)))
+      );
+
+      expect(
+        await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deploymentV2.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deploymentV2.balanceOf(userAddr3.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deploymentV2.balanceOf(userAddr4.address, BOOTSTRAPPER)
+      ).to.equal(1);
+
+      //////
+
+      await deploymentV2
+        .connect(userAddr1)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr1.address)));
+      await deploymentV2
+        .connect(userAddr2)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr2.address)));
+      await deploymentV2
+        .connect(userAddr3)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr3.address)));
+
+      await expectRevert.unspecified(
+        deploymentV2
+          .connect(userAddr4)
+          .mintVeteran(tree.getHexProof(keccak256(userAddr4.address)))
+      );
+
+      expect(await deploymentV2.balanceOf(userAddr1.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deploymentV2.balanceOf(userAddr2.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deploymentV2.balanceOf(userAddr3.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deploymentV2.balanceOf(userAddr4.address, VETERAN)).to.equal(
+        0
+      );
+    });
+    it("Can change whitelist after upgrade without affecting next whitelist", async function () {
+      let owner;
+      let userAddr1;
+      let userAddr2;
+      let userAddr3;
+      let userAddr4;
+
+      [owner, userAddr1, userAddr2, userAddr3, userAddr4] =
+        await ethers.getSigners();
+
+      let leaves = whitelistAddresses.map((addr) => keccak256(addr));
+      let tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
+      leaves = whitelistAddresses_v2.map((addr) => keccak256(addr));
+      tree_v2 = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
+      const contract = await ethers.getContractFactory("SeniorityBadge");
+      const deployment = await upgrades.deployProxy(contract);
+
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
+      let VETERAN = await deployment.VETERAN();
+
+      await deployment.deployed();
+      await deployment.connect(owner).unpause();
+
+      await deployment
+        .connect(owner)
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr2)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr2.address)));
+
+      await deployment
+        .connect(userAddr1)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr2)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr2.address)));
+
+      const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
+      const deploymentV2 = await upgrades.upgradeProxy(
+        deployment.address,
+        contractV2
+      );
+
+      await deploymentV2.deployed();
+      await deploymentV2.upgradeToV2();
+
+      await deploymentV2.connect(owner).setMerkleRoots(
+        "0x5c0965c65dfb1547d128efb3e61004f43995418da2d36870318fd1d53a6ec3ab", //1,2,3,4
+        "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3", //1,2,3
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      );
+
+      await deploymentV2
+        .connect(userAddr3)
+        .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr3.address)));
+
+      await deploymentV2
+        .connect(userAddr3)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr3.address)));
+
+      await deploymentV2
+        .connect(userAddr4)
+        .mintBootstrapper(tree_v2.getHexProof(keccak256(userAddr4.address)));
+
+      expect(
+        await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deploymentV2.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deploymentV2.balanceOf(userAddr3.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(
+        await deploymentV2.balanceOf(userAddr4.address, BOOTSTRAPPER)
+      ).to.equal(1);
+
+      expect(await deploymentV2.balanceOf(userAddr1.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deploymentV2.balanceOf(userAddr2.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deploymentV2.balanceOf(userAddr3.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deploymentV2.balanceOf(userAddr4.address, VETERAN)).to.equal(
+        0
+      );
+    });
     xit("Can increase claimed list after upgrade without affecting next claimlist", async function () {});
     xit("Can remove from whitelist after upgrade without affecting next whitelist", async function () {});
     xit("Can remove from claimed list after upgrade without affecting next whitelist", async function () {});

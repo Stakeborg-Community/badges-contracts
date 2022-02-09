@@ -10,7 +10,7 @@ const keccak256 = require("keccak256");
 const whitelistAddresses = require("./../data/whitelist.json");
 const whitelistAddresses_v2 = require("./../data/whitelist_v2.json");
 
-xdescribe("Seniority Badge Contract", function () {
+describe("Seniority Badge Contract", function () {
   let contract, deployment;
 
   let owner;
@@ -21,7 +21,7 @@ xdescribe("Seniority Badge Contract", function () {
   let userAddr5;
   let userAddrs;
 
-  let leafNodes, tree;
+  let tree;
 
   beforeEach(async function () {
     contract = await ethers.getContractFactory("SeniorityBadge");

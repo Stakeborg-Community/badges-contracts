@@ -66,6 +66,7 @@ contract SeniorityBadgeV2 is
     CountersUpgradeable.Counter private _testCounter;
     bytes32 public merkleRoot_test;
     mapping(address => bool) public testClaimed;
+    bool upgradedToV2;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -284,6 +285,13 @@ contract SeniorityBadgeV2 is
         testClaimed[msg.sender] = true;
 
         _revokeRole(MINTER_ROLE, msg.sender);
+    }
+
+    function upgradeToV2() public {
+        require(!upgradedToV2);
+        upgradedToV2 = true;
+        TEST = 5;
+        TEST_SUPPLY = 5;
     }
 
     function _beforeTokenTransfer(

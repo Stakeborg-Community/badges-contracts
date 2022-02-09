@@ -373,6 +373,18 @@ describe("Seniority Badge Contract", function () {
       expect(
         await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
+      expect(await deployment.balanceOf(userAddr1.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deployment.balanceOf(userAddr1.address, ADOPTER)).to.equal(
+        1
+      );
+      expect(await deployment.balanceOf(userAddr1.address, SUSTAINER)).to.equal(
+        1
+      );
+      expect(await deployment.balanceOf(userAddr1.address, BELIEVER)).to.equal(
+        1
+      );
     });
 
     it("Should not mint more than supply #1", async function () {
@@ -869,7 +881,7 @@ describe("Seniority Badge Contract", function () {
 
 describe("Seniority Badge Upgrade", function () {
   describe("Deployment", function () {
-    xit("Should upgrade", async function () {
+    it("Should upgrade", async function () {
       const contract = await ethers.getContractFactory("SeniorityBadge");
       const deployment = await upgrades.deployProxy(contract);
 
@@ -884,7 +896,7 @@ describe("Seniority Badge Upgrade", function () {
       await deploymentV2.deployed();
     });
 
-    xit("Upgrade should have new tokenid", async function () {
+    it("Upgrade should have new tokenid", async function () {
       const contract = await ethers.getContractFactory("SeniorityBadge");
       const deployment = await upgrades.deployProxy(contract);
 
@@ -903,31 +915,71 @@ describe("Seniority Badge Upgrade", function () {
       expect(await deploymentV2.BOOTSTRAPPER_SUPPLY()).to.equal(50);
 
       expect(await deploymentV2.TEST()).to.equal(5);
-      expect(await deploymentV2.TEST_SUPPLY()).to.equal(1);
+      expect(await deploymentV2.TEST_SUPPLY()).to.equal(5);
     });
 
-    xit("Minted tokens should remain after upgrade", async function () {
+    it("Minted tokens should remain after upgrade", async function () {
       let owner;
       let userAddr1;
-      let userAddr2;
 
-      [owner, userAddr1, userAddr2] = await ethers.getSigners();
+      [owner, userAddr1] = await ethers.getSigners();
+
+      let leaves = whitelistAddresses.map((addr) => keccak256(addr));
+      let tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
       const contract = await ethers.getContractFactory("SeniorityBadge");
       const deployment = await upgrades.deployProxy(contract);
 
+      await deployment.deployed();
       await deployment.connect(owner).unpause();
 
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
-
-      await deployment.deployed();
+      let VETERAN = await deployment.VETERAN();
+      let ADOPTER = await deployment.ADOPTER();
+      let SUSTAINER = await deployment.SUSTAINER();
+      let BELIEVER = await deployment.BELIEVER();
 
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3"
+        );
 
-      await deployment.connect(userAddr1).mint();
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr1)
+        .mintVeteran(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr1)
+        .mintAdopter(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr1)
+        .mintSustainer(tree.getHexProof(keccak256(userAddr1.address)));
+      await deployment
+        .connect(userAddr1)
+        .mintBeliever(tree.getHexProof(keccak256(userAddr1.address)));
+
+      expect(
+        await deployment.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(1);
+      expect(await deployment.balanceOf(userAddr1.address, VETERAN)).to.equal(
+        1
+      );
+      expect(await deployment.balanceOf(userAddr1.address, ADOPTER)).to.equal(
+        1
+      );
+      expect(await deployment.balanceOf(userAddr1.address, SUSTAINER)).to.equal(
+        1
+      );
+      expect(await deployment.balanceOf(userAddr1.address, BELIEVER)).to.equal(
+        1
+      );
 
       const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
       const deploymentV2 = await upgrades.upgradeProxy(
@@ -942,23 +994,48 @@ describe("Seniority Badge Upgrade", function () {
         await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
 
-      await deploymentV2.connect(userAddr1).mint();
+      await expectRevert.unspecified(
+        deployment
+          .connect(userAddr1)
+          .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)))
+      );
 
       expect(
         await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
       ).to.equal(1);
     });
 
-    xit("Admin should be able to transfer TEST token on upgraded contract with allowance", async function () {
+    it("Admin should be able to transfer TEST token on upgraded contract with allowance", async function () {
       let owner;
       let userAddr1;
       let userAddr2;
 
       [owner, userAddr1, userAddr2] = await ethers.getSigners();
+
+      let leaves = whitelistAddresses.map((addr) => keccak256(addr));
+      let tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
       const contract = await ethers.getContractFactory("SeniorityBadge");
       const deployment = await upgrades.deployProxy(contract);
 
+      let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
       await deployment.deployed();
+
+      await deployment.connect(owner).unpause();
+
+      await deployment
+        .connect(owner)
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
+
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
 
       const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
       const deploymentV2 = await upgrades.upgradeProxy(
@@ -969,50 +1046,83 @@ describe("Seniority Badge Upgrade", function () {
       await deploymentV2.deployed();
       await deploymentV2.upgradeToV2();
 
-      await deploymentV2.connect(owner).unpause();
-
-      let MINTER_TEST_ROLE = await deploymentV2.MINTER_TEST_ROLE();
       let TEST = await deploymentV2.TEST();
 
       await deploymentV2
         .connect(owner)
-        .grantRole(MINTER_TEST_ROLE, userAddr1.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3"
+        );
 
-      await deploymentV2.connect(userAddr1).mint();
+      await deploymentV2
+        .connect(userAddr1)
+        .mintTest(tree.getHexProof(keccak256(userAddr1.address)));
+
       await deploymentV2
         .connect(userAddr1)
         .setApprovalForAll(owner.address, true);
 
       await deploymentV2
         .connect(owner)
+        .safeTransferFrom(
+          userAddr1.address,
+          userAddr2.address,
+          BOOTSTRAPPER,
+          1,
+          0
+        );
+
+      await deploymentV2
+        .connect(owner)
         .safeTransferFrom(userAddr1.address, userAddr2.address, TEST, 1, 0);
+
+      expect(
+        await deploymentV2.balanceOf(userAddr1.address, BOOTSTRAPPER)
+      ).to.equal(0);
+      expect(
+        await deploymentV2.balanceOf(userAddr2.address, BOOTSTRAPPER)
+      ).to.equal(1);
 
       expect(await deploymentV2.balanceOf(userAddr1.address, TEST)).to.equal(0);
       expect(await deploymentV2.balanceOf(userAddr2.address, TEST)).to.equal(1);
     });
 
-    xit("Admin should be able to transfer BOOTSTRAPPER token on upgraded contract with allowance after upgrade", async function () {
+    it("Admin should be able to transfer BOOTSTRAPPER token on upgraded contract with allowance after upgrade", async function () {
       let owner;
       let userAddr1;
       let userAddr2;
 
       [owner, userAddr1, userAddr2] = await ethers.getSigners();
+
+      let leaves = whitelistAddresses.map((addr) => keccak256(addr));
+      let tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+
       const contract = await ethers.getContractFactory("SeniorityBadge");
       const deployment = await upgrades.deployProxy(contract);
 
-      await deployment.connect(owner).unpause();
-
-      let MINTER_BOOTSTRAPPER_ROLE =
-        await deployment.MINTER_BOOTSTRAPPER_ROLE();
       let BOOTSTRAPPER = await deployment.BOOTSTRAPPER();
-
       await deployment.deployed();
+
+      await deployment.connect(owner).unpause();
 
       await deployment
         .connect(owner)
-        .grantRole(MINTER_BOOTSTRAPPER_ROLE, userAddr1.address);
+        .setMerkleRoots(
+          "0x299933cac28b9df1ae6dbf7f5d9814b5fe409a67795ed15dea6135b5fe78c6e3",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
 
-      await deployment.connect(userAddr1).mint();
+      await deployment
+        .connect(userAddr1)
+        .mintBootstrapper(tree.getHexProof(keccak256(userAddr1.address)));
 
       const contractV2 = await ethers.getContractFactory("SeniorityBadgeV2");
       const deploymentV2 = await upgrades.upgradeProxy(
@@ -1046,9 +1156,11 @@ describe("Seniority Badge Upgrade", function () {
     });
   });
 
-  xit("Can increase whitelist after upgrade without affecting next whitelist", async function () {});
-  xit("Can change whitelist after upgrade without affecting next whitelist", async function () {});
-  xit("Can increase claimed list after upgrade without affecting next claimlist", async function () {});
-  xit("Can remove from whitelist after upgrade without affecting next whitelist", async function () {});
-  xit("Can remove from claimed list after upgrade without affecting next whitelist", async function () {});
+  describe("Upgrade data", () => {
+    xit("Can increase whitelist after upgrade without affecting next whitelist", async function () {});
+    xit("Can change whitelist after upgrade without affecting next whitelist", async function () {});
+    xit("Can increase claimed list after upgrade without affecting next claimlist", async function () {});
+    xit("Can remove from whitelist after upgrade without affecting next whitelist", async function () {});
+    xit("Can remove from claimed list after upgrade without affecting next whitelist", async function () {});
+  });
 });

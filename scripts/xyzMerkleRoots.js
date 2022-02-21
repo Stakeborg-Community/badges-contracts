@@ -76,11 +76,13 @@ async function main() {
   const type1000root = type1000tree.getHexRoot();
 
   let usefulObj = new Object();
-  usefulObj.tokenId = {
-    1: type100Addresses.toString(),
-    2: type250Addresses.toString(),
-    3: type500Addresses.toString(),
-    4: type1000Addresses.toString(),
+  usefulObj = {
+    tokenId: {
+      1: type100Addresses.toString(),
+      2: type250Addresses.toString(),
+      3: type500Addresses.toString(),
+      4: type1000Addresses.toString(),
+    },
     merkleRoot: {
       1: type100root,
       2: type250root,

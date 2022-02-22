@@ -4,6 +4,13 @@ const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
 require("dotenv").config();
 
+const usersAlreadyWhitelisted = require("../data/users_already_whitelisted.json");
+
+const addressAreadyWhiteslited1 = require("../data/address_already_whitelisted_1.json");
+const addressAreadyWhiteslited2 = require("../data/address_already_whitelisted_2.json");
+const addressAreadyWhiteslited3 = require("../data/address_already_whitelisted_3.json");
+const addressAreadyWhiteslited4 = require("../data/address_already_whitelisted_4.json");
+
 let provider = new ethers.providers.InfuraProvider(
   "homestead",
   process.env.INFURA_PROJECT_ID
@@ -11,9 +18,25 @@ let provider = new ethers.providers.InfuraProvider(
 var basicAuth =
   "Basic " + btoa(process.env.XYZ_API_USER + ":" + process.env.XYZ_API_KEY);
 
+let usersList = [];
+
+function getAlreadyWhitelistedAddresses(type) {
+  switch (type) {
+    case 100:
+      return addressAreadyWhiteslited1;
+    case 250:
+      return addressAreadyWhiteslited2;
+    case 500:
+      return addressAreadyWhiteslited3;
+    case 1000:
+      return addressAreadyWhiteslited4;
+    default:
+      break;
+  }
+}
+
 async function getAddresses(type) {
-  let addressList = [];
-  let root;
+  let addressList = getAlreadyWhitelistedAddresses(type);
   await axios
     .get(`https://stakeborgdao.xyz/wp-json/badges/v1/users?type=${type}`, {
       headers: { Authorization: basicAuth },
@@ -23,10 +46,17 @@ async function getAddresses(type) {
         let data = response.data;
 
         Object.keys(data).forEach(async (entry) => {
-          entryErc20 = data[entry]["erc20"];
-          if (entryErc20) {
+          let entryErc20 = data[entry]["erc20"];
+          let entryUsername = data[entry]["username"];
+          if (
+            entryErc20.length > 0 &&
+            ethers.utils.isAddress(entryErc20) &&
+            !usersAlreadyWhitelisted.includes(entryUsername) &&
+            !addressList.includes(entryErc20)
+          ) {
             var entryAddress = await provider.resolveName(entryErc20);
             addressList.push(entryAddress);
+            usersList.push(entryUsername);
           }
         });
       },
@@ -78,10 +108,10 @@ async function main() {
   let usefulObj = new Object();
   usefulObj = {
     tokenId: {
-      1: type100Addresses.toString(),
-      2: type250Addresses.toString(),
-      3: type500Addresses.toString(),
-      4: type1000Addresses.toString(),
+      1: JSON.stringify(type100Addresses),
+      2: JSON.stringify(type250Addresses),
+      3: JSON.stringify(type500Addresses),
+      4: JSON.stringify(type1000Addresses),
     },
     merkleRoot: {
       1: type100root,
@@ -92,6 +122,8 @@ async function main() {
   };
 
   console.log(usefulObj);
+  console.log(`Old users list: ${JSON.stringify(usersAlreadyWhitelisted)}`);
+  console.log(`New users list: ${JSON.stringify(usersList)}`);
 }
 
 main();

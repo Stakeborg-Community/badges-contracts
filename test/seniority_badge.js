@@ -7,8 +7,8 @@ const { BigNumber } = require("ethers");
 
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
-const whitelistAddresses = require("./../data/whitelist.json");
-const whitelistAddresses_v2 = require("./../data/whitelist_v2.json");
+const whitelistAddresses = require("./../data/test_whitelist.json");
+const whitelistAddresses_v2 = require("./../data/test_whitelist_v2.json");
 
 describe("Seniority Badge Contract", function () {
   let contract, deployment;

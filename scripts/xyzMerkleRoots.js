@@ -140,6 +140,22 @@ async function main() {
     "data/users_already_whitelisted.json",
     JSON.stringify(usersAlreadyWhitelisted, null, 2)
   );
+
+  fs.writeFileSync(
+    "data/merkleroots.json",
+    JSON.stringify(
+      {
+        merkleRoot: {
+          1: type100root,
+          2: type250root,
+          3: type500root,
+          4: type1000root,
+        },
+      },
+      null,
+      2
+    )
+  );
 }
 
 Array.prototype.extend = function (other_array) {

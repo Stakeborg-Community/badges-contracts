@@ -116,10 +116,12 @@ async function main() {
       4: type1000root,
     },
   };
-  console.log(usefulObj);
+
   console.log(`Old users list: ${JSON.stringify(usersAlreadyWhitelisted)}`);
   console.log(`New users list: ${JSON.stringify(usersList)}`);
+
   if (usersList.length > 0) usersAlreadyWhitelisted.push(...usersList);
+
   fs.writeFileSync(
     "data/address_already_whitelisted_1.json",
     JSON.stringify(type100Addresses)
@@ -155,6 +157,11 @@ async function main() {
       null,
       2
     )
+  );
+
+  fs.writeFileSync(
+    "data/frontend_data.json",
+    JSON.stringify(usefulObj, null, 2)
   );
 }
 

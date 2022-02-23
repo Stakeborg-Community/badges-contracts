@@ -19,6 +19,12 @@ async function main() {
     await hre.upgrades.erc1967.getImplementationAddress(deployment.address)
   );
 
+  console.log(
+    "Sleeping for 30 seconds to make sure propagation is completed..."
+  );
+  await new Promise((r) => setTimeout(r, 1000 * 30));
+
+  console.log("Starting verification");
   await hre.run("verify:verify", {
     address: await hre.upgrades.erc1967.getImplementationAddress(
       deployment.address

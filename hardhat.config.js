@@ -25,7 +25,7 @@ module.exports = {
       url: `https://polygon-mainnet.g.alchemy.com/v2/${POLYGON_API_KEY}`,
       accounts: [`${DEPLOYER_PRIVATE_KEY}`],
     },
-    mumbai: {
+    polygonMumbai: {
       url: `https://polygon-mumbai.g.alchemy.com/v2/${MUMBAI_API_KEY}`,
       accounts: [`${DEPLOYER_PRIVATE_KEY}`],
     },
@@ -34,7 +34,7 @@ module.exports = {
     apiKey: {
       // polygon
       polygon: POLYSCAN_API_KEY,
-      mumbai: POLYSCAN_API_KEY,
+      polygonMumbai: POLYSCAN_API_KEY,
     },
   },
   solidity: {

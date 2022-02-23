@@ -28,7 +28,7 @@ jobs:
           touch .env
           echo POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }} >> .env
           echo MUMBAI_API_KEY=${{ secrets.MUMBAI_API_KEY }} >> .env
-          echo PRIVATE_KEY=${{ secrets.PRIVATE_KEY }} >> .env
+          echo DEPLOYER_PRIVATE_KEY=${{ secrets.DEPLOYER_PRIVATE_KEY }} >> .env
           echo POLYSCAN_API_KEY=${{ secrets.POLYSCAN_API_KEY }} >> .env
 
       - name: Run hardhat tests

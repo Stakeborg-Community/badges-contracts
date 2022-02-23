@@ -34,7 +34,7 @@ module.exports = {
     apiKey: {
       // polygon
       polygon: POLYSCAN_API_KEY,
-      polygonMumbai: POLYSCAN_API_KEY,
+      mumbai: POLYSCAN_API_KEY,
     },
   },
   solidity: {

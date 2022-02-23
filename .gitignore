@@ -1,2 +1,7 @@
 node_modules
-secrets.json
+artifacts
+cache
+coverage*
+.env
+.openzeppelin
+.DS_Store

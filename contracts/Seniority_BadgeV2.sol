@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-contract SeniorityBadge is
+contract SeniorityBadgeV2 is
     Initializable,
     ERC1155Upgradeable,
     AccessControlUpgradeable,
@@ -61,6 +61,13 @@ contract SeniorityBadge is
     bytes32 public constant WHITELISTER_ROLE = keccak256("WHITELISTER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    uint256 public TEST;
+    uint256 public TEST_SUPPLY;
+    CountersUpgradeable.Counter private _testCounter;
+    bytes32 public merkleRoot_test;
+    mapping(address => bool) public testClaimed;
+    bool upgradedToV2;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
@@ -105,6 +112,9 @@ contract SeniorityBadge is
         ADOPTER_SUPPLY = 250;
         SUSTAINER_SUPPLY = 500;
         BELIEVER_SUPPLY = 1000;
+
+        TEST = 5;
+        TEST_SUPPLY = 5;
     }
 
     function setMerkleRoots(
@@ -112,13 +122,15 @@ contract SeniorityBadge is
         bytes32 _veteranMerkleRoot,
         bytes32 _adopterMerkleRoot,
         bytes32 _sustainerMerkleRoot,
-        bytes32 _believerMerkleRoot
+        bytes32 _believerMerkleRoot,
+        bytes32 _testMerkleRoot
     ) external onlyRole(WHITELISTER_ROLE) {
         merkleRoot_bootstrapper = _bootstrapperMerkleRoot;
         merkleRoot_veteran = _veteranMerkleRoot;
         merkleRoot_adopter = _adopterMerkleRoot;
         merkleRoot_sustainer = _sustainerMerkleRoot;
         merkleRoot_believer = _believerMerkleRoot;
+        merkleRoot_test = _testMerkleRoot;
     }
 
     function setURI(string memory newuri) external onlyRole(URI_SETTER_ROLE) {
@@ -138,19 +150,22 @@ contract SeniorityBadge is
         uint256 veteranNewSupply,
         uint256 adopterNewSupply,
         uint256 sustainerNewSupply,
-        uint256 believerNewSupply
+        uint256 believerNewSupply,
+        uint256 testNewSupply
     ) external onlyRole(SUPPLY_SETTER_ROLE) {
         BOOTSTRAPPER_SUPPLY = bootstrapperNewSupply;
         VETERAN_SUPPLY = veteranNewSupply;
         ADOPTER_SUPPLY = adopterNewSupply;
         SUSTAINER_SUPPLY = sustainerNewSupply;
         BELIEVER_SUPPLY = believerNewSupply;
+        TEST_SUPPLY = testNewSupply;
     }
 
-    function _verifyMerkleProof(
-        bytes32[] memory proof,
-        bytes32 root
-    ) internal view returns (bool) {
+    function _verifyMerkleProof(bytes32[] memory proof, bytes32 root)
+        internal
+        view
+        returns (bool)
+    {
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
         return MerkleProof.verify(proof, root, leaf);
     }
@@ -178,10 +193,7 @@ contract SeniorityBadge is
         _revokeRole(MINTER_ROLE, msg.sender);
     }
 
-    function mintVeteran(bytes32[] calldata _proof)
-        external
-        whenNotPaused
-    {
+    function mintVeteran(bytes32[] calldata _proof) external whenNotPaused {
         require(!veteranClaimed[msg.sender], "Already claimed");
         require(
             _veteranCounter.current() < VETERAN_SUPPLY,
@@ -201,10 +213,7 @@ contract SeniorityBadge is
         _revokeRole(MINTER_ROLE, msg.sender);
     }
 
-    function mintAdopter(bytes32[] calldata _proof)
-        external
-        whenNotPaused
-    {
+    function mintAdopter(bytes32[] calldata _proof) external whenNotPaused {
         require(!adopterClaimed[msg.sender], "Already claimed");
         require(
             _adopterCounter.current() < ADOPTER_SUPPLY,
@@ -224,10 +233,7 @@ contract SeniorityBadge is
         _revokeRole(MINTER_ROLE, msg.sender);
     }
 
-    function mintSustainer(bytes32[] calldata _proof)
-        external
-        whenNotPaused
-    {
+    function mintSustainer(bytes32[] calldata _proof) external whenNotPaused {
         require(!sustainerClaimed[msg.sender], "Already claimed");
         require(
             _sustainerCounter.current() < SUSTAINER_SUPPLY,
@@ -247,10 +253,7 @@ contract SeniorityBadge is
         _revokeRole(MINTER_ROLE, msg.sender);
     }
 
-    function mintBeliever(bytes32[] calldata _proof)
-        external
-        whenNotPaused
-    {
+    function mintBeliever(bytes32[] calldata _proof) external whenNotPaused {
         require(!believerClaimed[msg.sender], "Already claimed");
         require(
             _believerCounter.current() < BELIEVER_SUPPLY,
@@ -270,6 +273,27 @@ contract SeniorityBadge is
         _revokeRole(MINTER_ROLE, msg.sender);
     }
 
+    function mintTest(bytes32[] calldata _proof) external whenNotPaused {
+        require(!testClaimed[msg.sender], "Already claimed");
+        require(_testCounter.current() < TEST_SUPPLY, "Exceeded max supply");
+        require(_verifyMerkleProof(_proof, merkleRoot_test), "Invalid proof");
+
+        _grantRole(MINTER_ROLE, msg.sender);
+
+        _testCounter.increment();
+        _mint(msg.sender, TEST, 1, "");
+        testClaimed[msg.sender] = true;
+
+        _revokeRole(MINTER_ROLE, msg.sender);
+    }
+
+    function upgradeToV2() public {
+        require(!upgradedToV2);
+        upgradedToV2 = true;
+        TEST = 5;
+        TEST_SUPPLY = 5;
+    }
+
     function _beforeTokenTransfer(
         address operator,
         address from,
@@ -282,8 +306,11 @@ contract SeniorityBadge is
         override(ERC1155Upgradeable, ERC1155SupplyUpgradeable)
         whenNotPaused
     {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(MINTER_ROLE, msg.sender), 
-            "Token is not transferable");
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender) ||
+                hasRole(MINTER_ROLE, msg.sender),
+            "Token is not transferable"
+        );
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 

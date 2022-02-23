@@ -22,7 +22,7 @@ module.exports = {
       },
     },
     polygon: {
-      url: `https://polygon-mainnet.g.alchemy.com/v2/${MUMBAI_API_KEY}`,
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${POLYGON_API_KEY}`,
       accounts: [`${DEPLOYER_PRIVATE_KEY}`],
     },
     mumbai: {

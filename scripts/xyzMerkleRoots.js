@@ -5,7 +5,7 @@ const keccak256 = require("keccak256");
 require("dotenv").config();
 
 const fs = require("fs");
-
+const btoa = require("btoa");
 const usersAlreadyWhitelisted = require("../data/users_already_whitelisted.json");
 
 const addressAreadyWhiteslited1 = require("../data/address_already_whitelisted_1.json");

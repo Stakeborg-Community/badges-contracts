@@ -46,11 +46,13 @@ async function getAddresses(type) {
     .then(
       async (response) => {
         let data = response.data;
-
-        Object.keys(data).forEach(async (entry) => {
+        
+        await Promise.all(Object.keys(data).map(async (entry) => {
           let entryErc20 = data[entry]["erc20"];
           let entryUsername = data[entry]["username"];
-
+          if (entryUsername === "freefly") {
+            console.log("freefly found");
+          }
           if (entryErc20.length > 0) {
             var entryAddress = await provider.resolveName(entryErc20);
             if (
@@ -62,7 +64,7 @@ async function getAddresses(type) {
               usersList.push(entryUsername);
             }
           }
-        });
+        }));
       },
       (error) => {
         console.log(error);
